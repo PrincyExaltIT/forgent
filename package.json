@@ -7,7 +7,8 @@
     "skills": "bin/skills.js"
   },
   "scripts": {
-    "start": "node bin/skills.js"
+    "start": "node bin/skills.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"

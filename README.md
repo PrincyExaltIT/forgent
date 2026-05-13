@@ -116,6 +116,16 @@ A skill folder can contain anything. For `claude`, the whole directory is
 copied as-is. For `copilot` / `codex` / `cursor`, only `SKILL.md` is copied and
 renamed to the provider's expected extension.
 
+## Tests
+
+```bash
+npm test
+```
+
+Uses Node's built-in test runner (`node:test`) — no third-party deps. Covers
+each provider adapter's install/remove/conflict/force/dry-run semantics, the
+provider and install-dir resolution order, and end-to-end CLI invocations.
+
 ## What this is not
 
 - **Not a runtime.** After `add`, the CLI is uninvolved. Your agent reads the installed file directly.
