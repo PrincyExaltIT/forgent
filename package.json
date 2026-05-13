@@ -1,7 +1,7 @@
 {
   "name": "skills-cli",
-  "version": "0.1.0",
-  "description": "shadcn-style installer for Claude Code skills: pick a skill from a registry and copy it into your local ~/.claude/skills directory. You own the copy.",
+  "version": "0.2.0",
+  "description": "shadcn-style installer for AI agent skills. Pick from a registry, copy into your provider's local skills directory (Claude Code, GitHub Copilot, OpenAI Codex CLI, or Cursor). You own the copy.",
   "type": "module",
   "bin": {
     "skills": "bin/skills.js"

@@ -1,12 +1,7 @@
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 
 const CONFIG_FILENAME = "skills.config.json";
-
-export function defaultInstallDir() {
-  return path.join(os.homedir(), ".claude", "skills");
-}
 
 export async function loadConfig(cwd) {
   const file = path.join(cwd, CONFIG_FILENAME);
@@ -25,11 +20,22 @@ export async function writeConfig(cwd, data) {
   return file;
 }
 
-export async function resolveInstallDir(ctx) {
+export async function resolveProviderName(ctx) {
+  if (ctx.flags.provider) return ctx.flags.provider;
+  if (process.env.SKILLS_PROVIDER) return process.env.SKILLS_PROVIDER;
+  const { data } = await loadConfig(ctx.cwd);
+  if (data && typeof data.provider === "string") return data.provider;
+  return null;
+}
+
+export async function resolveInstallDir(ctx, provider) {
   if (ctx.flags.dest) return path.resolve(ctx.cwd, ctx.flags.dest);
+  if (process.env.SKILLS_INSTALL_DIR) {
+    return path.resolve(ctx.cwd, process.env.SKILLS_INSTALL_DIR);
+  }
   const { data } = await loadConfig(ctx.cwd);
   if (data && typeof data.installDir === "string") {
     return path.resolve(ctx.cwd, data.installDir);
   }
-  return defaultInstallDir();
+  return provider.defaultInstallDir();
 }

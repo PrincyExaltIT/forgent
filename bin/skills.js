@@ -7,40 +7,53 @@ import { runList } from "../src/commands/list.js";
 import { runInfo } from "../src/commands/info.js";
 import { runAdd } from "../src/commands/add.js";
 import { runRemove } from "../src/commands/remove.js";
+import { runProviders } from "../src/commands/providers.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(HERE, "..");
 
-const HELP = `skills — shadcn-style installer for Claude Code skills
+const HELP = `skills — shadcn-style installer for AI agent skills
+              (Claude Code, GitHub Copilot, OpenAI Codex CLI, Cursor)
 
 Usage:
-  skills init               Create a skills.config.json in the current dir
-  skills list               Show every skill available in the registry
-  skills info <name>        Show one skill's description and files
-  skills add <name>...      Copy one or more skills into your install dir
-  skills remove <name>      Delete an installed skill from your install dir
-  skills help               Show this help text
+  skills providers                          List supported providers
+  skills list                               List skills in the registry
+  skills info <name>                        Show one skill's metadata + files
+  skills add --provider <p> <name>...       Copy skills into <p>'s install dir
+  skills remove --provider <p> <name>       Delete an installed skill
+  skills init [--provider <p>] [--dest <d>] Persist defaults in skills.config.json
+  skills help                               Show this help text
 
 Flags:
-  --registry <path>         Override the registry directory
-                            (default: bundled registry/ in this package)
-  --dest <path>             Override the install directory
-                            (default: skills.config.json -> "installDir",
-                             else ~/.claude/skills)
-  --force                   Overwrite an existing skill on add
-  --dry-run                 Print what would happen, change nothing
+  --provider <name>     Target provider: claude | copilot | codex | cursor.
+                        Required for add/remove unless persisted via
+                        skills.config.json or SKILLS_PROVIDER env var.
+  --registry <path>     Override the registry directory.
+                        Default: bundled registry/ next to the CLI.
+  --dest <path>         Override the install directory.
+                        Default: provider's own default location, or value
+                        from SKILLS_INSTALL_DIR / skills.config.json.
+  --force               Overwrite an existing skill on add.
+  --dry-run             Print what would happen, change nothing.
 
 Principle (same as shadcn/ui):
-  Skills are not "installed" as dependencies. \`add\` copies the source
-  files into your install dir. You own the copy and can edit it freely.
+  Skills are not "installed" as dependencies. \`add\` copies the source files
+  into your provider's install dir. You own the copy and can edit it freely.
 `;
 
 function parseArgs(argv) {
-  const flags = { registry: null, dest: null, force: false, dryRun: false };
+  const flags = {
+    provider: null,
+    registry: null,
+    dest: null,
+    force: false,
+    dryRun: false,
+  };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--registry") flags.registry = argv[++i];
+    if (a === "--provider") flags.provider = argv[++i];
+    else if (a === "--registry") flags.registry = argv[++i];
     else if (a === "--dest") flags.dest = argv[++i];
     else if (a === "--force") flags.force = true;
     else if (a === "--dry-run") flags.dryRun = true;
@@ -66,6 +79,9 @@ async function main() {
     case "-h":
     case "--help":
       console.log(HELP);
+      return;
+    case "providers":
+      await runProviders();
       return;
     case "init":
       await runInit(ctx);
