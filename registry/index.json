@@ -1,0 +1,21 @@
+{
+  "$schema": "https://example.local/skills-cli/registry-schema.json",
+  "name": "default",
+  "skills": [
+    {
+      "name": "commit",
+      "description": "Stage and commit with a conventional-commit message.",
+      "tags": ["git"]
+    },
+    {
+      "name": "review",
+      "description": "Review the diff on the current branch and report findings.",
+      "tags": ["git", "quality"]
+    },
+    {
+      "name": "plan-mode",
+      "description": "Draft an implementation plan before touching code.",
+      "tags": ["workflow"]
+    }
+  ]
+}
