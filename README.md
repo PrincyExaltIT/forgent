@@ -74,7 +74,11 @@ node bin/skills.js init --provider claude
 node bin/skills.js add commit
 ```
 
-Or, after `npm link` once, replace `node bin/skills.js` with `skills` globally.
+Or, after `npm run link` once, replace `node bin/skills.js` with `skills` globally.
+To remove the global symlink later, run `npm run unlink` from this repo (or
+`npm unlink -g skills-cli` from anywhere). Note: the symlink is scoped to the
+active Node version — under nvm, you must re-run `npm run link` after switching
+versions.
 
 ## Commands
 

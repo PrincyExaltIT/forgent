@@ -8,7 +8,9 @@
   },
   "scripts": {
     "start": "node bin/skills.js",
-    "test": "node --test"
+    "test": "node --test",
+    "link": "npm link",
+    "unlink": "npm unlink -g skills-cli"
   },
   "engines": {
     "node": ">=18"
