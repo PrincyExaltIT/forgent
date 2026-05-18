@@ -77,6 +77,16 @@ file. The registry ships skills with Claude-style frontmatter (`name`,
 frontmatter for Copilot (`mode`, `tools`), Codex (none required), or Cursor
 (`globs`, `alwaysApply`). Since you own the copy, edit it freely.
 
+### Pre-rendered provider variants
+
+If a skill's source folder ships a `<name>.prompt.md` (Copilot) or
+`<name>.codex.md` (Codex) alongside `SKILL.md`, forgent installs that variant
+instead of `SKILL.md` for the matching provider. Use this when you want to
+ship hand-tuned content per provider — frontmatter, prompt style, tool list —
+without asking users to edit after install. The `claude` provider copies the
+whole skill folder, so it always has access to every file. `cursor` currently
+has no variant convention and always uses `SKILL.md`.
+
 ## Usage
 
 ```bash

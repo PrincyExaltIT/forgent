@@ -7,7 +7,7 @@ import * as claude from "../src/providers/claude.js";
 import * as copilot from "../src/providers/copilot.js";
 import * as codex from "../src/providers/codex.js";
 import * as cursor from "../src/providers/cursor.js";
-import { mkTmp, rmTmp, pathExists, seedRegistry, readText } from "./_helpers.js";
+import { mkTmp, rmTmp, pathExists, seedRegistry, readText, writeText } from "./_helpers.js";
 
 const ADAPTERS = [
   { adapter: claude, ext: null, isFolder: true, label: "claude" },
@@ -163,7 +163,7 @@ test("file-style adapters reject sources missing SKILL.md", async () => {
           force: false,
           dryRun: false,
         }),
-        /missing required SKILL\.md/,
+        /SKILL\.md/,
         `${spec.label} should reject empty source`,
       );
     }
@@ -172,3 +172,36 @@ test("file-style adapters reject sources missing SKILL.md", async () => {
     await rmTmp(emptySource);
   }
 });
+
+const VARIANT_SPECS = [
+  { adapter: copilot, label: "copilot", variantName: "demo.prompt.md", installFile: "demo.prompt.md" },
+  { adapter: codex, label: "codex", variantName: "demo.codex.md", installFile: "demo.md" },
+];
+
+for (const spec of VARIANT_SPECS) {
+  test(`${spec.label}: install prefers pre-rendered variant over SKILL.md`, async () => {
+    const registryDir = await mkTmp("skills-reg-");
+    const installDir = await mkTmp("skills-inst-");
+    try {
+      await seedRegistry(registryDir, { skillName: "demo", body: "FROM SKILL\n" });
+      const sourceDir = path.join(registryDir, "skills", "demo");
+      await writeText(path.join(sourceDir, spec.variantName), "FROM VARIANT\n");
+      await spec.adapter.install({
+        installDir,
+        skillName: "demo",
+        sourceDir,
+        force: false,
+        dryRun: false,
+      });
+      const content = await readText(path.join(installDir, spec.installFile));
+      assert.ok(content.includes("FROM VARIANT"), `${spec.label} should use variant`);
+      assert.ok(
+        !content.includes("FROM SKILL"),
+        `${spec.label} should not fall back to SKILL.md when variant present`,
+      );
+    } finally {
+      await rmTmp(registryDir);
+      await rmTmp(installDir);
+    }
+  });
+}

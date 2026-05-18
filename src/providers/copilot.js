@@ -9,6 +9,7 @@ export const description =
 
 const EXT = ".prompt.md";
 const MAIN_SOURCE_FILE = "SKILL.md";
+const VARIANT_FILE = (skillName) => `${skillName}.prompt.md`;
 
 export function defaultInstallDir() {
   if (process.platform === "win32") {
@@ -33,12 +34,15 @@ function targetFile(installDir, skillName) {
 }
 
 export async function install({ installDir, skillName, sourceDir, force, dryRun }) {
-  const sourceFile = path.join(sourceDir, MAIN_SOURCE_FILE);
-  if (!(await exists(sourceFile))) {
+  const variantPath = path.join(sourceDir, VARIANT_FILE(skillName));
+  const fallbackPath = path.join(sourceDir, MAIN_SOURCE_FILE);
+  let sourceFile;
+  if (await exists(variantPath)) sourceFile = variantPath;
+  else if (await exists(fallbackPath)) sourceFile = fallbackPath;
+  else
     throw new Error(
-      `copilot: source skill missing required ${MAIN_SOURCE_FILE} at ${sourceFile}`,
+      `copilot: no ${MAIN_SOURCE_FILE} or ${VARIANT_FILE(skillName)} found in ${sourceDir}`,
     );
-  }
   const target = targetFile(installDir, skillName);
   if (await exists(target)) {
     if (!force) {
