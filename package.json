@@ -1,18 +1,49 @@
 {
-  "name": "skills-cli",
-  "version": "0.2.0",
-  "description": "shadcn-style installer for AI agent skills. Pick from a registry, copy into your provider's local skills directory (Claude Code, GitHub Copilot, OpenAI Codex CLI, or Cursor). You own the copy.",
+  "name": "forgent",
+  "version": "0.1.0",
+  "description": "shadcn-style installer for AI agent skills. Pick from a remote registry and copy the source into your agent's local skills directory (Claude Code, GitHub Copilot, OpenAI Codex CLI, or Cursor). You own the copy.",
   "type": "module",
   "bin": {
-    "skills": "bin/skills.js"
+    "forgent": "bin/forgent.js"
   },
+  "files": [
+    "bin",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
-    "start": "node bin/skills.js",
+    "start": "node bin/forgent.js",
     "test": "node --test",
-    "link": "npm link",
-    "unlink": "npm unlink -g skills-cli"
+    "prepublishOnly": "npm test"
   },
   "engines": {
     "node": ">=18"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "copilot",
+    "codex",
+    "cursor",
+    "ai",
+    "agent",
+    "skills",
+    "prompts",
+    "shadcn",
+    "registry"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrincyExaltIT/forgent.git"
+  },
+  "homepage": "https://github.com/PrincyExaltIT/forgent#readme",
+  "bugs": {
+    "url": "https://github.com/PrincyExaltIT/forgent/issues"
+  },
+  "author": "PrincyExaltIT",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -30,7 +30,7 @@ export async function install({ installDir, skillName, sourceDir, force, dryRun 
     if (!force) {
       throw new Error(
         `cursor: rule "${skillName}${EXT}" already exists at ${target}. ` +
-          `Pass --force to overwrite, or run: skills remove --provider cursor ${skillName}`,
+          `Pass --force to overwrite, or run: forgent remove --provider cursor ${skillName}`,
       );
     }
     if (dryRun) console.log(`[dry-run] would remove existing ${target}`);

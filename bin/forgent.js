@@ -12,27 +12,29 @@ import { runProviders } from "../src/commands/providers.js";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(HERE, "..");
 
-const HELP = `skills — shadcn-style installer for AI agent skills
+const HELP = `forgent — shadcn-style installer for AI agent skills
               (Claude Code, GitHub Copilot, OpenAI Codex CLI, Cursor)
 
 Usage:
-  skills providers                          List supported providers
-  skills list                               List skills in the registry
-  skills info <name>                        Show one skill's metadata + files
-  skills add --provider <p> <name>...       Copy skills into <p>'s install dir
-  skills remove --provider <p> <name>       Delete an installed skill
-  skills init [--provider <p>] [--dest <d>] Persist defaults in skills.config.json
-  skills help                               Show this help text
+  forgent providers                          List supported providers
+  forgent list                               List skills in the registry
+  forgent info <name>                        Show one skill's metadata + files
+  forgent add --provider <p> <name>...       Copy skills into <p>'s install dir
+  forgent remove --provider <p> <name>       Delete an installed skill
+  forgent init [--provider <p>] [--dest <d>] Persist defaults in forgent.config.json
+  forgent help                               Show this help text
 
 Flags:
   --provider <name>     Target provider: claude | copilot | codex | cursor.
                         Required for add/remove unless persisted via
-                        skills.config.json or SKILLS_PROVIDER env var.
-  --registry <path>     Override the registry directory.
-                        Default: bundled registry/ next to the CLI.
+                        forgent.config.json or FORGENT_PROVIDER env var.
+  --registry <url|path> Override the registry source. Accepts an HTTPS URL
+                        (e.g. https://raw.githubusercontent.com/<owner>/<repo>/main/)
+                        or a local filesystem path. Default: the bundled
+                        community registry hosted on GitHub.
   --dest <path>         Override the install directory.
                         Default: provider's own default location, or value
-                        from SKILLS_INSTALL_DIR / skills.config.json.
+                        from FORGENT_INSTALL_DIR / forgent.config.json.
   --force               Overwrite an existing skill on add.
   --dry-run             Print what would happen, change nothing.
 
@@ -91,21 +93,21 @@ async function main() {
       return;
     case "info":
       if (positional.length === 0) {
-        console.error("error: `skills info` needs a skill name");
+        console.error("error: `forgent info` needs a skill name");
         process.exit(2);
       }
       await runInfo(ctx, positional[0]);
       return;
     case "add":
       if (positional.length === 0) {
-        console.error("error: `skills add` needs at least one skill name");
+        console.error("error: `forgent add` needs at least one skill name");
         process.exit(2);
       }
       await runAdd(ctx, positional);
       return;
     case "remove":
       if (positional.length === 0) {
-        console.error("error: `skills remove` needs a skill name");
+        console.error("error: `forgent remove` needs a skill name");
         process.exit(2);
       }
       await runRemove(ctx, positional[0]);
@@ -118,6 +120,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`skills: ${err.message}`);
+  console.error(`forgent: ${err.message}`);
   process.exit(1);
 });

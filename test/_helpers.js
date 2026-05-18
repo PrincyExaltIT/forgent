@@ -7,10 +7,9 @@ export const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
-export const REGISTRY_DIR = path.join(REPO_ROOT, "registry");
-export const BIN = path.join(REPO_ROOT, "bin", "skills.js");
+export const BIN = path.join(REPO_ROOT, "bin", "forgent.js");
 
-export async function mkTmp(prefix = "skills-test-") {
+export async function mkTmp(prefix = "forgent-test-") {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
 }
 
@@ -38,12 +37,21 @@ export async function writeText(p, content) {
 }
 
 /** Build a fake registry under `root` with a single skill folder. */
-export async function seedRegistry(root, { skillName = "demo", body = "# Demo\nhello\n" } = {}) {
-  const index = {
+export async function seedRegistry(
+  root,
+  { skillName = "demo", body = "# Demo\nhello\n" } = {},
+) {
+  const manifest = {
     name: "test",
-    skills: [{ name: skillName, description: `Test skill ${skillName}` }],
+    items: [
+      {
+        name: skillName,
+        description: `Test skill ${skillName}`,
+        files: [{ path: "SKILL.md", type: "skill:main" }],
+      },
+    ],
   };
-  await writeText(path.join(root, "index.json"), JSON.stringify(index, null, 2));
+  await writeText(path.join(root, "registry.json"), JSON.stringify(manifest, null, 2));
   await writeText(
     path.join(root, "skills", skillName, "SKILL.md"),
     `---\nname: ${skillName}\ndescription: Test skill ${skillName}\n---\n\n${body}`,

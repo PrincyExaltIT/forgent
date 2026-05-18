@@ -30,7 +30,7 @@ export async function install({ installDir, skillName, sourceDir, force, dryRun 
     if (!force) {
       throw new Error(
         `codex: file "${skillName}${EXT}" already exists at ${target}. ` +
-          `Pass --force to overwrite, or run: skills remove --provider codex ${skillName}`,
+          `Pass --force to overwrite, or run: forgent remove --provider codex ${skillName}`,
       );
     }
     if (dryRun) console.log(`[dry-run] would remove existing ${target}`);

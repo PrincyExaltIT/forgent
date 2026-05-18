@@ -1,33 +1,58 @@
-# skills-cli
+# forgent
 
-A shadcn/ui-style installer for **AI agent skills**, supporting Claude Code,
-GitHub Copilot, OpenAI Codex CLI, and Cursor.
+> Forge your agent's skills.
+
+A shadcn/ui-style installer for **AI agent skills**. Pick a skill from a
+remote registry, copy the source into your agent's local skills directory,
+and own the copy. Supports Claude Code, GitHub Copilot, OpenAI Codex CLI,
+and Cursor.
+
+```bash
+npx forgent add --provider claude commit
+```
 
 ## The principle (same as shadcn/ui)
 
 shadcn/ui is not an npm dependency — it is a **registry of components** plus a
 CLI that **copies the source** into your project. You own the code afterwards.
 
-`skills-cli` brings the same model to AI agent skills. Pick a skill from the
-registry, run `skills add --provider <name> <skill>`, and the source markdown
+`forgent` brings the same model to AI agent skills. Pick a skill from the
+registry, run `forgent add --provider <name> <skill>`, and the source markdown
 is copied into your agent's local skills directory under a provider-appropriate
 filename. The CLI then steps out — your copy is yours to edit.
 
-| shadcn/ui                                       | skills-cli                                                |
+| shadcn/ui                                       | forgent                                                   |
 | ----------------------------------------------- | --------------------------------------------------------- |
-| `components.json` config in the project         | `skills.config.json` in your cwd (optional)               |
-| Registry of components                          | Registry of skills under `registry/skills/<name>/`        |
-| `npx shadcn-ui@latest add button`               | `skills add --provider claude commit`                     |
+| `components.json` config in the project         | `forgent.config.json` in your cwd (optional)              |
+| Remote registry served over HTTPS               | Remote registry served over HTTPS                          |
+| `npx shadcn add button`                         | `npx forgent add --provider claude commit`                |
 | Source copied into `src/components/ui`          | Source copied into your provider's skills/prompts/rules dir |
 | You own the file                                | Same — your copy is yours                                 |
 
+## Install
+
+No install needed — invoke with `npx`:
+
+```bash
+npx forgent add --provider claude commit
+```
+
+Or install globally:
+
+```bash
+npm install -g forgent
+forgent add --provider claude commit
+```
+
+Requires Node 18+ (uses the global `fetch`).
+
 ## Supported providers
 
-| Provider   | Default install dir (per OS, see notes)                                | File layout                          |
+| Provider   | Default install dir (per OS)                                           | File layout                          |
 | ---------- | ---------------------------------------------------------------------- | ------------------------------------ |
 | `claude`   | `~/.claude/skills/<name>/SKILL.md`                                     | folder per skill, whole source copied |
 | `copilot`  | `<VS Code user dir>/prompts/<name>.prompt.md`                          | single file, source `SKILL.md` renamed |
-| `codex`    | `~/.codex/skills/<name>.md` *(custom — see caveat below)*              | single file                           |
+| `codex`    | `~/.codex/skills/<name>.md` *(see caveat below)*                       | single file                           |
 | `cursor`   | `~/.cursor/rules/<name>.mdc`                                           | single file                           |
 
 `copilot` install dir per OS:
@@ -56,69 +81,98 @@ frontmatter for Copilot (`mode`, `tools`), Codex (none required), or Cursor
 
 ```bash
 # inspect what's available
-node bin/skills.js providers
-node bin/skills.js list
-node bin/skills.js info commit
+npx forgent providers
+npx forgent list
+npx forgent info commit
 
 # install for a specific provider
-node bin/skills.js add --provider claude commit review
-node bin/skills.js add --provider copilot commit
-node bin/skills.js add --provider cursor commit
+npx forgent add --provider claude commit review
+npx forgent add --provider copilot commit
+npx forgent add --provider cursor commit
 
 # uninstall
-node bin/skills.js remove --provider claude commit
+npx forgent remove --provider claude commit
 
 # persist a default provider for this directory
-node bin/skills.js init --provider claude
+npx forgent init --provider claude
 # subsequent calls don't need --provider
-node bin/skills.js add commit
+npx forgent add commit
 ```
-
-Or, after `npm run link` once, replace `node bin/skills.js` with `skills` globally.
-To remove the global symlink later, run `npm run unlink` from this repo (or
-`npm unlink -g skills-cli` from anywhere). Note: the symlink is scoped to the
-active Node version — under nvm, you must re-run `npm run link` after switching
-versions.
 
 ## Commands
 
-- `skills providers` — list supported providers and their default install dirs.
-- `skills list` — list every skill in the registry with its description.
-- `skills info <name>` — show one skill's metadata and the files that would be copied.
-- `skills add --provider <p> <name>...` — copy one or more skills into provider `<p>`'s install dir. Refuses to overwrite unless `--force`.
-- `skills remove --provider <p> <name>` — delete an installed skill from provider `<p>`'s install dir.
-- `skills init [--provider <p>] [--dest <d>]` — persist defaults in `skills.config.json` so future commands don't need the flag.
+- `forgent providers` — list supported providers and their default install dirs.
+- `forgent list` — list every skill in the registry with its description.
+- `forgent info <name>` — show one skill's metadata and the files that would be copied.
+- `forgent add --provider <p> <name>...` — copy one or more skills into provider `<p>`'s install dir. Refuses to overwrite unless `--force`.
+- `forgent remove --provider <p> <name>` — delete an installed skill from provider `<p>`'s install dir.
+- `forgent init [--provider <p>] [--dest <d>]` — persist defaults in `forgent.config.json` so future commands don't need the flag.
 
 ## Flags
 
-- `--provider <name>` — required for `add` / `remove` unless persisted via `skills.config.json` or the `SKILLS_PROVIDER` env var.
-- `--registry <path>` — point at a different registry directory (default: bundled `registry/`).
-- `--dest <path>` — override the install directory (otherwise: provider default, or `SKILLS_INSTALL_DIR`, or `skills.config.json`).
+- `--provider <name>` — required for `add` / `remove` unless persisted via `forgent.config.json` or the `FORGENT_PROVIDER` env var.
+- `--registry <url|path>` — override the registry source. Accepts an HTTPS URL (e.g. your own GitHub raw URL) or a local filesystem path. Default: the bundled community registry hosted on GitHub.
+- `--dest <path>` — override the install directory (otherwise: provider default, or `FORGENT_INSTALL_DIR`, or `forgent.config.json`).
 - `--force` — overwrite an existing install on `add`.
 - `--dry-run` — print what would happen, write nothing.
 
 ## Resolution order
 
-For provider: `--provider` flag → `SKILLS_PROVIDER` env → `skills.config.json` → error.
-For install dir: `--dest` flag → `SKILLS_INSTALL_DIR` env → `skills.config.json` → provider's default.
+For provider: `--provider` flag → `FORGENT_PROVIDER` env → `forgent.config.json` → error.
+For install dir: `--dest` flag → `FORGENT_INSTALL_DIR` env → `forgent.config.json` → provider's default.
+For registry: `--registry` flag → `FORGENT_REGISTRY` env → built-in default URL.
 
-## Registry layout
+## The registry
 
+The default registry is hosted at
+`https://raw.githubusercontent.com/PrincyExaltIT/agent-skill` (branch `main`).
+forgent fetches `<base>/registry.json` for the manifest, then fetches each
+declared skill file at `<base>/skills/<name>/<file>`.
+
+### Manifest shape
+
+```json
+{
+  "$schema": "https://forgent.dev/schema/registry.json",
+  "name": "default",
+  "items": [
+    {
+      "name": "commit",
+      "description": "Stage and commit with a conventional-commit message.",
+      "tags": ["git"],
+      "files": [
+        { "path": "SKILL.md", "type": "skill:main" }
+      ]
+    }
+  ]
+}
 ```
-registry/
-  index.json                   # { name, skills: [{ name, description, tags? }] }
-  skills/
-    commit/
-      SKILL.md
-    review/
-      SKILL.md
-    plan-mode/
-      SKILL.md
+
+Paths in `files[].path` are relative to `<base>/skills/<item.name>/`. The
+shape is intentionally close to [shadcn/ui's registry schema](https://github.com/shadcn-ui/registry-template)
+so concepts transfer.
+
+### Host your own
+
+Any HTTPS URL that serves `registry.json` and the corresponding
+`skills/<name>/<file>` paths works as a registry. Point forgent at it:
+
+```bash
+npx forgent add --provider claude my-skill \
+  --registry https://your-domain.com/registry
 ```
 
-A skill folder can contain anything. For `claude`, the whole directory is
-copied as-is. For `copilot` / `codex` / `cursor`, only `SKILL.md` is copied and
-renamed to the provider's expected extension.
+A local filesystem path also works — useful while authoring a registry
+locally:
+
+```bash
+npx forgent --registry ./path/to/registry list
+```
+
+### Contribute a skill
+
+Open a PR against
+[PrincyExaltIT/agent-skill](https://github.com/PrincyExaltIT/agent-skill).
 
 ## Tests
 
@@ -128,10 +182,15 @@ npm test
 
 Uses Node's built-in test runner (`node:test`) — no third-party deps. Covers
 each provider adapter's install/remove/conflict/force/dry-run semantics, the
-provider and install-dir resolution order, and end-to-end CLI invocations.
+provider and install-dir resolution order, end-to-end CLI invocations against
+the bundled fixture, and end-to-end HTTP fetches against a local server.
 
 ## What this is not
 
 - **Not a runtime.** After `add`, the CLI is uninvolved. Your agent reads the installed file directly.
 - **Not a frontmatter translator.** The registry's frontmatter is Claude-shaped; you adjust per provider after install.
 - **Not a package manager.** No lockfile, no version resolution, no update command. Re-run `add --force` to fetch the latest registry version, knowing it will overwrite your local edits.
+
+## License
+
+MIT

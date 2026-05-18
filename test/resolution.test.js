@@ -29,10 +29,10 @@ function withEnv(vars, fn) {
 const fakeProvider = { name: "fake", defaultInstallDir: () => "/fake/default" };
 
 test("resolveProviderName: --provider flag wins over everything", async () => {
-  const cwd = await mkTmp("skills-cfg-");
+  const cwd = await mkTmp("forgent-cfg-");
   try {
     await writeConfig(cwd, { provider: "fromconfig" });
-    await withEnv({ SKILLS_PROVIDER: "fromenv" }, async () => {
+    await withEnv({ FORGENT_PROVIDER: "fromenv" }, async () => {
       const name = await resolveProviderName(makeCtx(cwd, { provider: "fromflag" }));
       assert.equal(name, "fromflag");
     });
@@ -42,10 +42,10 @@ test("resolveProviderName: --provider flag wins over everything", async () => {
 });
 
 test("resolveProviderName: env beats config", async () => {
-  const cwd = await mkTmp("skills-cfg-");
+  const cwd = await mkTmp("forgent-cfg-");
   try {
     await writeConfig(cwd, { provider: "fromconfig" });
-    await withEnv({ SKILLS_PROVIDER: "fromenv" }, async () => {
+    await withEnv({ FORGENT_PROVIDER: "fromenv" }, async () => {
       const name = await resolveProviderName(makeCtx(cwd));
       assert.equal(name, "fromenv");
     });
@@ -55,10 +55,10 @@ test("resolveProviderName: env beats config", async () => {
 });
 
 test("resolveProviderName: config used when flag and env absent", async () => {
-  const cwd = await mkTmp("skills-cfg-");
+  const cwd = await mkTmp("forgent-cfg-");
   try {
     await writeConfig(cwd, { provider: "fromconfig" });
-    await withEnv({ SKILLS_PROVIDER: null }, async () => {
+    await withEnv({ FORGENT_PROVIDER: null }, async () => {
       const name = await resolveProviderName(makeCtx(cwd));
       assert.equal(name, "fromconfig");
     });
@@ -68,9 +68,9 @@ test("resolveProviderName: config used when flag and env absent", async () => {
 });
 
 test("resolveProviderName: null when nothing set", async () => {
-  const cwd = await mkTmp("skills-cfg-");
+  const cwd = await mkTmp("forgent-cfg-");
   try {
-    await withEnv({ SKILLS_PROVIDER: null }, async () => {
+    await withEnv({ FORGENT_PROVIDER: null }, async () => {
       const name = await resolveProviderName(makeCtx(cwd));
       assert.equal(name, null);
     });
@@ -80,10 +80,10 @@ test("resolveProviderName: null when nothing set", async () => {
 });
 
 test("resolveInstallDir: --dest flag wins over env and config", async () => {
-  const cwd = await mkTmp("skills-cfg-");
+  const cwd = await mkTmp("forgent-cfg-");
   try {
     await writeConfig(cwd, { installDir: "/from/config" });
-    await withEnv({ SKILLS_INSTALL_DIR: "/from/env" }, async () => {
+    await withEnv({ FORGENT_INSTALL_DIR: "/from/env" }, async () => {
       const dir = await resolveInstallDir(
         makeCtx(cwd, { dest: "/from/flag" }),
         fakeProvider,
@@ -96,10 +96,10 @@ test("resolveInstallDir: --dest flag wins over env and config", async () => {
 });
 
 test("resolveInstallDir: env beats config", async () => {
-  const cwd = await mkTmp("skills-cfg-");
+  const cwd = await mkTmp("forgent-cfg-");
   try {
     await writeConfig(cwd, { installDir: "/from/config" });
-    await withEnv({ SKILLS_INSTALL_DIR: "/from/env" }, async () => {
+    await withEnv({ FORGENT_INSTALL_DIR: "/from/env" }, async () => {
       const dir = await resolveInstallDir(makeCtx(cwd), fakeProvider);
       assert.equal(dir, path.resolve("/from/env"));
     });
@@ -109,10 +109,10 @@ test("resolveInstallDir: env beats config", async () => {
 });
 
 test("resolveInstallDir: config used when flag and env absent", async () => {
-  const cwd = await mkTmp("skills-cfg-");
+  const cwd = await mkTmp("forgent-cfg-");
   try {
     await writeConfig(cwd, { installDir: "/from/config" });
-    await withEnv({ SKILLS_INSTALL_DIR: null }, async () => {
+    await withEnv({ FORGENT_INSTALL_DIR: null }, async () => {
       const dir = await resolveInstallDir(makeCtx(cwd), fakeProvider);
       assert.equal(dir, path.resolve(cwd, "/from/config"));
     });
@@ -122,9 +122,9 @@ test("resolveInstallDir: config used when flag and env absent", async () => {
 });
 
 test("resolveInstallDir: provider default when nothing set", async () => {
-  const cwd = await mkTmp("skills-cfg-");
+  const cwd = await mkTmp("forgent-cfg-");
   try {
-    await withEnv({ SKILLS_INSTALL_DIR: null }, async () => {
+    await withEnv({ FORGENT_INSTALL_DIR: null }, async () => {
       const dir = await resolveInstallDir(makeCtx(cwd), fakeProvider);
       assert.equal(dir, "/fake/default");
     });

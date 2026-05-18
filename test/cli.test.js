@@ -2,13 +2,17 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { BIN, mkTmp, pathExists, rmTmp } from "./_helpers.js";
+import { BIN, REPO_ROOT, mkTmp, pathExists, rmTmp } from "./_helpers.js";
 
 function run(args, { env = {}, cwd } = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [BIN, ...args], {
       cwd: cwd || path.dirname(BIN),
-      env: { ...process.env, ...env },
+      env: {
+        ...process.env,
+        FORGENT_REGISTRY: REPO_ROOT,
+        ...env,
+      },
     });
     let stdout = "";
     let stderr = "";
@@ -34,10 +38,10 @@ test("CLI: `list` shows registry skills", async () => {
 });
 
 test("CLI: `add` without --provider exits non-zero with helpful message", async () => {
-  const installDir = await mkTmp("skills-cli-noprov-");
+  const installDir = await mkTmp("forgent-cli-noprov-");
   try {
     const r = await run(["add", "commit", "--dest", installDir], {
-      env: { SKILLS_PROVIDER: "" },
+      env: { FORGENT_PROVIDER: "" },
     });
     assert.notEqual(r.code, 0);
     assert.match(r.stderr, /--provider is required/);
@@ -48,7 +52,7 @@ test("CLI: `add` without --provider exits non-zero with helpful message", async 
 });
 
 test("CLI: `add --provider claude` writes folder-per-skill", async () => {
-  const installDir = await mkTmp("skills-cli-claude-");
+  const installDir = await mkTmp("forgent-cli-claude-");
   try {
     const r = await run(["add", "--provider", "claude", "commit", "--dest", installDir]);
     assert.equal(r.code, 0, r.stderr);
@@ -59,7 +63,7 @@ test("CLI: `add --provider claude` writes folder-per-skill", async () => {
 });
 
 test("CLI: `add --provider copilot` writes <name>.prompt.md", async () => {
-  const installDir = await mkTmp("skills-cli-copilot-");
+  const installDir = await mkTmp("forgent-cli-copilot-");
   try {
     const r = await run(["add", "--provider", "copilot", "commit", "--dest", installDir]);
     assert.equal(r.code, 0, r.stderr);
@@ -70,7 +74,7 @@ test("CLI: `add --provider copilot` writes <name>.prompt.md", async () => {
 });
 
 test("CLI: `add --provider cursor` writes <name>.mdc", async () => {
-  const installDir = await mkTmp("skills-cli-cursor-");
+  const installDir = await mkTmp("forgent-cli-cursor-");
   try {
     const r = await run(["add", "--provider", "cursor", "commit", "--dest", installDir]);
     assert.equal(r.code, 0, r.stderr);
@@ -81,7 +85,7 @@ test("CLI: `add --provider cursor` writes <name>.mdc", async () => {
 });
 
 test("CLI: `add --provider codex` writes <name>.md", async () => {
-  const installDir = await mkTmp("skills-cli-codex-");
+  const installDir = await mkTmp("forgent-cli-codex-");
   try {
     const r = await run(["add", "--provider", "codex", "commit", "--dest", installDir]);
     assert.equal(r.code, 0, r.stderr);
@@ -92,7 +96,7 @@ test("CLI: `add --provider codex` writes <name>.md", async () => {
 });
 
 test("CLI: add unknown skill exits non-zero with available list", async () => {
-  const installDir = await mkTmp("skills-cli-unknown-");
+  const installDir = await mkTmp("forgent-cli-unknown-");
   try {
     const r = await run([
       "add",
@@ -111,7 +115,7 @@ test("CLI: add unknown skill exits non-zero with available list", async () => {
 });
 
 test("CLI: add conflict refuses without --force, succeeds with it", async () => {
-  const installDir = await mkTmp("skills-cli-conflict-");
+  const installDir = await mkTmp("forgent-cli-conflict-");
   try {
     const a = await run(["add", "--provider", "claude", "commit", "--dest", installDir]);
     assert.equal(a.code, 0, a.stderr);
@@ -136,7 +140,7 @@ test("CLI: add conflict refuses without --force, succeeds with it", async () => 
 });
 
 test("CLI: remove deletes; subsequent remove errors", async () => {
-  const installDir = await mkTmp("skills-cli-remove-");
+  const installDir = await mkTmp("forgent-cli-remove-");
   try {
     await run(["add", "--provider", "claude", "commit", "--dest", installDir]);
     const r = await run(["remove", "--provider", "claude", "commit", "--dest", installDir]);
@@ -151,11 +155,11 @@ test("CLI: remove deletes; subsequent remove errors", async () => {
   }
 });
 
-test("CLI: SKILLS_PROVIDER env supplies provider when flag omitted", async () => {
-  const installDir = await mkTmp("skills-cli-env-");
+test("CLI: FORGENT_PROVIDER env supplies provider when flag omitted", async () => {
+  const installDir = await mkTmp("forgent-cli-env-");
   try {
     const r = await run(["add", "commit", "--dest", installDir], {
-      env: { SKILLS_PROVIDER: "cursor" },
+      env: { FORGENT_PROVIDER: "cursor" },
     });
     assert.equal(r.code, 0, r.stderr);
     assert.ok(await pathExists(path.join(installDir, "commit.mdc")));
@@ -165,7 +169,7 @@ test("CLI: SKILLS_PROVIDER env supplies provider when flag omitted", async () =>
 });
 
 test("CLI: --dry-run writes nothing to disk", async () => {
-  const installDir = await mkTmp("skills-cli-dry-");
+  const installDir = await mkTmp("forgent-cli-dry-");
   try {
     const r = await run([
       "add",

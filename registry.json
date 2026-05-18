@@ -1,0 +1,31 @@
+{
+  "$schema": "https://forgent.dev/schema/registry.json",
+  "name": "default",
+  "homepage": "https://github.com/PrincyExaltIT/agent-skill",
+  "items": [
+    {
+      "name": "commit",
+      "description": "Stage and commit with a conventional-commit message.",
+      "tags": ["git"],
+      "files": [
+        { "path": "SKILL.md", "type": "skill:main" }
+      ]
+    },
+    {
+      "name": "review",
+      "description": "Review the diff on the current branch and report findings.",
+      "tags": ["git", "quality"],
+      "files": [
+        { "path": "SKILL.md", "type": "skill:main" }
+      ]
+    },
+    {
+      "name": "plan-mode",
+      "description": "Draft an implementation plan before touching code.",
+      "tags": ["workflow"],
+      "files": [
+        { "path": "SKILL.md", "type": "skill:main" }
+      ]
+    }
+  ]
+}
