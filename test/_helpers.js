@@ -8,6 +8,7 @@ export const REPO_ROOT = path.resolve(
   "..",
 );
 export const BIN = path.join(REPO_ROOT, "bin", "forgent.js");
+export const FIXTURE_REGISTRY = path.join(REPO_ROOT, "test", "fixtures", "registry");
 
 export async function mkTmp(prefix = "forgent-test-") {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));

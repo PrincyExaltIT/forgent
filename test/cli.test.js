@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { BIN, REPO_ROOT, mkTmp, pathExists, rmTmp } from "./_helpers.js";
+import { BIN, FIXTURE_REGISTRY, mkTmp, pathExists, rmTmp } from "./_helpers.js";
 
 function run(args, { env = {}, cwd } = {}) {
   return new Promise((resolve) => {
@@ -10,7 +10,7 @@ function run(args, { env = {}, cwd } = {}) {
       cwd: cwd || path.dirname(BIN),
       env: {
         ...process.env,
-        FORGENT_REGISTRY: REPO_ROOT,
+        FORGENT_REGISTRY: FIXTURE_REGISTRY,
         ...env,
       },
     });

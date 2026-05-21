@@ -193,7 +193,7 @@ npm test
 Uses Node's built-in test runner (`node:test`) — no third-party deps. Covers
 each provider adapter's install/remove/conflict/force/dry-run semantics, the
 provider and install-dir resolution order, end-to-end CLI invocations against
-the bundled fixture, and end-to-end HTTP fetches against a local server.
+the test fixture at `test/fixtures/registry/`, and end-to-end HTTP fetches against a local server.
 
 ## What this is not
 
