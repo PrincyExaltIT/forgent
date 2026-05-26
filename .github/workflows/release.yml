@@ -27,6 +27,10 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
+      - name: Upgrade npm CLI for trusted publishing
+        run: npm install -g npm@latest
+        # Trusted publishing needs npm >= 11.5.1; Node 22 ships with npm 10.
+
       - name: Verify version match
         run: |
           PKG=$(node -p "require('./package.json').version")
@@ -45,11 +49,12 @@ jobs:
       - name: Extract CHANGELOG section
         run: node scripts/extract-changelog.mjs "${{ inputs.version }}" > release-notes.md
 
-      - name: npm publish (with provenance)
+      - name: npm publish (trusted publishing, auto provenance)
         if: ${{ !inputs.dry_run }}
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Auth is via OIDC trusted publisher configured on npmjs.com; no
+        # NPM_TOKEN secret needed. --provenance is redundant under trusted
+        # publishing (auto-generated) but kept explicit for clarity.
 
       - name: Tag and push
         if: ${{ !inputs.dry_run }}
