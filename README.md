@@ -208,6 +208,7 @@ any mismatch — no network, purely local.
 - `forgent add --provider <p> <name>[@<version>]...` — copy one or more skills into provider `<p>`'s install dir. Refuses to overwrite unless `--force`. Pinning to `@<version>` requires the registry to declare `items[].version`.
 - `forgent remove --provider <p> <name>` — delete an installed skill from provider `<p>`'s install dir.
 - `forgent init [--provider <p>] [--dest <d>]` — persist defaults in `forgent.config.json` so future commands don't need the flag.
+- `forgent registry list | add <name> <url> [--default] [--force] | remove <name> | set-default <name>` — manage named registries persisted in `forgent.config.json`. See [Multi-registry](#multi-registry).
 - `forgent validate-registry` — load and validate the registry manifest (fail-fast for CI). Honors `--registry`.
 - `forgent verify` — re-hash installed files against `forgent.lock.json` and report any drift. Exits 1 on FAIL. No network.
 - `forgent doctor` — diagnose the local install: Node version, OS/arch, provider, install dir writability, registry reachability.
@@ -225,7 +226,7 @@ any mismatch — no network, purely local.
 
 For provider: `--provider` flag → `FORGENT_PROVIDER` env → `forgent.config.json` → error.
 For install dir: `--dest` flag → `FORGENT_INSTALL_DIR` env → `forgent.config.json` → provider's default.
-For registry: `--registry` flag → `FORGENT_REGISTRY` env → built-in default URL.
+For registry: `--registry` flag (configured name or raw URL/path) → `FORGENT_REGISTRY` env (same) → `forgent.config.json` `defaultRegistry` (by name) → built-in default URL. See [Multi-registry](#multi-registry).
 
 ## The registry
 
@@ -281,6 +282,56 @@ locally:
 ```bash
 npx forgent --registry ./path/to/registry list
 ```
+
+### Multi-registry
+
+You can persist multiple named registries in `forgent.config.json` and mark
+one as the default for this directory:
+
+```bash
+# add the public registry under a friendly name
+npx forgent registry add official \
+  https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main/ \
+  --default
+
+# add an internal one alongside
+npx forgent registry add my-internal https://internal.corp/forgent-registry/
+
+# inspect (the * marks the default)
+npx forgent registry list
+# * official      https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main/
+#   my-internal   https://internal.corp/forgent-registry/
+
+# switch the default
+npx forgent registry set-default my-internal
+
+# drop one
+npx forgent registry remove my-internal
+```
+
+`forgent.config.json` after the two `add` calls:
+
+```json
+{
+  "provider": "claude",
+  "registries": [
+    { "name": "official", "url": "https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main/" },
+    { "name": "my-internal", "url": "https://internal.corp/forgent-registry/" }
+  ],
+  "defaultRegistry": "official"
+}
+```
+
+`--registry <value>` and `FORGENT_REGISTRY` both accept a configured **name**
+in addition to a raw URL or path. The full resolution order is:
+
+1. `--registry <value>` — name match in config, else literal URL/path.
+2. `FORGENT_REGISTRY` env — same.
+3. `forgent.config.json` `defaultRegistry` (by name).
+4. Built-in default URL.
+
+Use `--force` on `registry add` to overwrite an existing entry. `--default`
+on `registry add` makes the new entry the default in one step.
 
 ### Contribute a skill
 
