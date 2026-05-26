@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }} / node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [18, 20, 22]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: node --test --test-reporter=spec
+      - run: npm pack --dry-run
+
+  smoke:
+    name: smoke (packed tarball, global install)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm pack
+      - name: Install packed tarball globally
+        run: npm install -g ./forgent-*.tgz
+      - name: forgent --version
+        run: forgent --version
+      - name: forgent list against local fixture
+        run: forgent list --registry ./test/fixtures/registry
+      - name: forgent doctor against local fixture
+        run: forgent doctor --provider claude --registry ./test/fixtures/registry
+      - name: schema/ ships in tarball
+        run: tar -tzf forgent-*.tgz | grep -q 'package/schema/registry.schema.json'

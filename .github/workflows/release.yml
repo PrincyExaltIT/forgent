@@ -1,0 +1,76 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (X.Y.Z, must match package.json)"
+        required: true
+      dry_run:
+        description: "Dry-run (no publish, no tag, no GitHub release)"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Verify version match
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          IN="${{ inputs.version }}"
+          IN="${IN#v}"
+          if [ "$PKG" != "$IN" ]; then
+            echo "::error::package.json version ($PKG) does not match input ($IN)"
+            exit 1
+          fi
+          echo "Releasing v$PKG"
+
+      - run: npm ci
+      - run: node --test --test-reporter=spec
+      - run: npm pack
+
+      - name: Extract CHANGELOG section
+        run: node scripts/extract-changelog.mjs "${{ inputs.version }}" > release-notes.md
+
+      - name: npm publish (with provenance)
+        if: ${{ !inputs.dry_run }}
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Tag and push
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          VERSION="${VERSION#v}"
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+
+      - name: GitHub Release
+        if: ${{ !inputs.dry_run }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          body_path: release-notes.md
+          files: forgent-*.tgz
+
+      - name: Dry-run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry-run complete. Pack and tests succeeded; nothing was published or tagged."
+          ls -la forgent-*.tgz
+          echo "--- release notes preview ---"
+          cat release-notes.md
