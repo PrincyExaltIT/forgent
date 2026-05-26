@@ -163,9 +163,11 @@ Registries can ship a SHA256 for each file:
 ```
 
 When `sha256` is present, forgent verifies the fetched body matches before
-writing — a mismatch aborts with both hashes in the error. When absent, you
-get one `WARN` per skill and the install proceeds. To refuse any install
-without a sha256, pass `--strict-sha256` (or set `FORGENT_STRICT_SHA256=1`).
+writing — a mismatch aborts with both hashes in the error. When absent, the
+install errors (strict mode is the default since 1.0). To opt out and fall
+back to a one-time `WARN` per skill, pass `--no-strict-sha256` or set
+`FORGENT_STRICT_SHA256=0`. Use the opt-out only as a migration crutch for
+registries that have not adopted sha256 yet.
 
 `forgent add foo@1.2.3` pins to an exact version. The registry must declare
 `items[].version`; otherwise the install errors with a clear message. Use
@@ -222,7 +224,8 @@ any mismatch — no network, purely local.
 - `--dest <path>` — override the install directory (otherwise: provider default, or `FORGENT_INSTALL_DIR`, or `forgent.config.json`).
 - `--force` — overwrite an existing install on `add`.
 - `--dry-run` — print what would happen, write nothing.
-- `--strict-sha256` — refuse to install any file whose manifest entry omits a sha256. Same as `FORGENT_STRICT_SHA256=1`.
+- `--strict-sha256` — (default since 1.0) refuse to install any file whose manifest entry omits a sha256. Same as `FORGENT_STRICT_SHA256=1`. Kept as an explicit no-op for scripts that want to pin the behaviour.
+- `--no-strict-sha256` — opt out of strict mode: install with a one-time `WARN` per skill when the manifest omits a sha256. Same as `FORGENT_STRICT_SHA256=0`.
 
 ## Resolution order
 
@@ -356,6 +359,28 @@ the test fixture at `test/fixtures/registry/`, and end-to-end HTTP fetches again
 - **Not a runtime.** After `add`, the CLI is uninvolved. Your agent reads the installed file directly.
 - **Not a frontmatter translator.** The registry's frontmatter is Claude-shaped; you adjust per provider after install.
 - **Not a full package manager.** There is a lockfile and exact-version pinning, but no semver range resolution, no transitive deps, no `update` command. To pull a newer version: re-run `add --force` (it will overwrite your local edits).
+
+## Stability
+
+forgent ≥ 1.0 follows [semver](https://semver.org/spec/v2.0.0.html). The
+**public API** is:
+
+- the CLI flag surface (`forgent --help`),
+- the registry manifest schema ([`schema/registry.schema.json`](./schema/registry.schema.json)),
+- the lockfile shape (`forgent.lock.json`, `lockfileVersion: 1`),
+- and the documented exit codes (`0` success, `1` runtime error, `2` usage error).
+
+Breaking changes to any of the above require a major version bump.
+
+**Internal modules under `src/*.js` are NOT public.** If you import them
+programmatically, pin to an exact major version — refactors there can land
+in a minor.
+
+The default registry URL
+(`https://raw.githubusercontent.com/PrincyExaltIT/agent-skill`) is stable but
+may move to a CDN domain post-1.0 without a major bump. Rewriting a `$schema`
+URL or the default registry endpoint is non-breaking; the data shape at the
+endpoint is what's covered by semver.
 
 ## License
 

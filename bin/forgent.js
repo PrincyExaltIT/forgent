@@ -66,8 +66,13 @@ Flags:
                         registry entry on \`registry add\`.
   --default             On \`registry add\`, also mark the new entry default.
   --dry-run             Print what would happen, change nothing.
-  --strict-sha256       Refuse to install any file whose manifest entry does
-                        not declare a sha256. Same as FORGENT_STRICT_SHA256=1.
+  --strict-sha256       (Default since 1.0.) Refuse to install any file whose
+                        manifest entry does not declare a sha256. Kept as an
+                        explicit no-op for scripts that pin pre-1.0 behaviour.
+  --no-strict-sha256    Opt out of strict mode: install with a one-time WARN
+                        when the manifest omits a sha256. Same as
+                        FORGENT_STRICT_SHA256=0. Use only as a migration crutch
+                        for registries that have not adopted sha256 yet.
 
 Versioning:
   \`forgent add foo@1.2.3\` pins to that exact version. The registry must
@@ -86,7 +91,10 @@ function parseArgs(argv) {
     dest: null,
     force: false,
     dryRun: false,
-    strictSha256: false,
+    // null = no CLI opinion (strict is the default; FORGENT_STRICT_SHA256=0
+    // can still opt out). true = explicit opt-in (kept as a no-op since
+    // strict is the default). false = explicit opt-out via --no-strict-sha256.
+    strictSha256: null,
     makeDefault: false,
   };
   const positional = [];
@@ -99,6 +107,7 @@ function parseArgs(argv) {
     else if (a === "--default") flags.makeDefault = true;
     else if (a === "--dry-run") flags.dryRun = true;
     else if (a === "--strict-sha256") flags.strictSha256 = true;
+    else if (a === "--no-strict-sha256") flags.strictSha256 = false;
     else if (a === "-h" || a === "--help") positional.push("help");
     else positional.push(a);
   }

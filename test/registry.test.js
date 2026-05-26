@@ -61,6 +61,9 @@ test("registry: `add` fetches skill files over HTTP", async () => {
   });
   const installDir = await mkTmp("forgent-http-");
   try {
+    // This test predates the strict-sha256 default and is about HTTP fetch
+    // mechanics, not integrity policy. Opt out of strict mode so the
+    // hash-less fixture still installs.
     const r = await runCLI([
       "add",
       "--provider",
@@ -70,6 +73,7 @@ test("registry: `add` fetches skill files over HTTP", async () => {
       installDir,
       "--registry",
       url,
+      "--no-strict-sha256",
     ]);
     assert.equal(r.code, 0, r.stderr);
     const file = path.join(installDir, "hello", "SKILL.md");
