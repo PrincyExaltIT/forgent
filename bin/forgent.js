@@ -8,6 +8,7 @@ import { runInfo } from "../src/commands/info.js";
 import { runAdd } from "../src/commands/add.js";
 import { runRemove } from "../src/commands/remove.js";
 import { runProviders } from "../src/commands/providers.js";
+import { runRegistry } from "../src/commands/registry.js";
 import { runValidateRegistry } from "../src/commands/validate-registry.js";
 import { runDoctor } from "../src/commands/doctor.js";
 import { runVerify } from "../src/commands/verify.js";
@@ -28,6 +29,7 @@ Usage:
   forgent add --provider <p> <name>[@v]...   Copy skills into <p>'s install dir
   forgent remove --provider <p> <name>       Delete an installed skill
   forgent init [--provider <p>] [--dest <d>] Persist defaults in forgent.config.json
+  forgent registry <verb> [args]             Manage named registries (see below)
   forgent validate-registry                  Validate the registry manifest
   forgent verify                             Re-hash installed files vs forgent.lock.json
   forgent hash-files [--registry <path>]     Diff manifest sha256 vs computed (local registry)
@@ -36,18 +38,33 @@ Usage:
   forgent --version | -V | version           Print the forgent version
   forgent help                               Show this help text
 
+Registries:
+  forgent registry list                      Print configured registries (* = default)
+  forgent registry add <name> <url|path>     Append; name = kebab-case
+                          [--default] [--force]
+  forgent registry remove <name>             Drop one (clears default if it was)
+  forgent registry set-default <name>        Mark one as default
+
+  Resolution order for the active registry:
+    1. --registry <value>      (name match in config, else literal url/path)
+    2. FORGENT_REGISTRY env    (name match in config, else literal url/path)
+    3. forgent.config.json defaultRegistry (by name)
+    4. built-in default URL
+
 Flags:
   --provider <name>     Target provider: claude | copilot | codex | cursor.
                         Required for add/remove/verify unless persisted via
                         forgent.config.json or FORGENT_PROVIDER env var.
-  --registry <url|path> Override the registry source. Accepts an HTTPS URL
-                        (e.g. https://raw.githubusercontent.com/<owner>/<repo>/main/)
-                        or a local filesystem path. Default: the bundled
-                        community registry hosted on GitHub.
+  --registry <url|path> Override the registry source. Accepts a configured
+                        registry name, an HTTPS URL, or a local filesystem
+                        path. Default: forgent.config.json defaultRegistry,
+                        or the bundled community registry hosted on GitHub.
   --dest <path>         Override the install directory.
                         Default: provider's own default location, or value
                         from FORGENT_INSTALL_DIR / forgent.config.json.
-  --force               Overwrite an existing skill on add.
+  --force               Overwrite an existing skill on add, or an existing
+                        registry entry on \`registry add\`.
+  --default             On \`registry add\`, also mark the new entry default.
   --dry-run             Print what would happen, change nothing.
   --strict-sha256       Refuse to install any file whose manifest entry does
                         not declare a sha256. Same as FORGENT_STRICT_SHA256=1.
@@ -70,6 +87,7 @@ function parseArgs(argv) {
     force: false,
     dryRun: false,
     strictSha256: false,
+    makeDefault: false,
   };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
@@ -78,6 +96,7 @@ function parseArgs(argv) {
     else if (a === "--registry") flags.registry = argv[++i];
     else if (a === "--dest") flags.dest = argv[++i];
     else if (a === "--force") flags.force = true;
+    else if (a === "--default") flags.makeDefault = true;
     else if (a === "--dry-run") flags.dryRun = true;
     else if (a === "--strict-sha256") flags.strictSha256 = true;
     else if (a === "-h" || a === "--help") positional.push("help");
@@ -137,6 +156,9 @@ async function main() {
         process.exit(2);
       }
       await runRemove(ctx, positional[0]);
+      return;
+    case "registry":
+      await runRegistry(ctx, positional);
       return;
     case "validate-registry":
       await runValidateRegistry(ctx);

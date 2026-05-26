@@ -20,6 +20,34 @@ export async function writeConfig(cwd, data) {
   return file;
 }
 
+/**
+ * Read the configured registries from forgent.config.json.
+ *
+ * Returns { registries, defaultRegistry } where registries is always an array
+ * (possibly empty) of { name, url } objects and defaultRegistry is the name
+ * string or null. Tolerates a config that lacks both fields (treats as zero
+ * configured) so single-registry users keep working unchanged.
+ */
+export async function loadRegistries(cwd) {
+  const { data } = await loadConfig(cwd);
+  if (!data || typeof data !== "object") {
+    return { registries: [], defaultRegistry: null };
+  }
+  const registries = Array.isArray(data.registries)
+    ? data.registries.filter(
+        (r) => r && typeof r === "object" && typeof r.name === "string" && typeof r.url === "string",
+      )
+    : [];
+  const defaultRegistry =
+    typeof data.defaultRegistry === "string" ? data.defaultRegistry : null;
+  return { registries, defaultRegistry };
+}
+
+export function findRegistryByName(registries, name) {
+  if (!name || typeof name !== "string") return null;
+  return registries.find((r) => r.name === name) || null;
+}
+
 export async function resolveProviderName(ctx) {
   if (ctx.flags.provider) return ctx.flags.provider;
   if (process.env.FORGENT_PROVIDER) return process.env.FORGENT_PROVIDER;

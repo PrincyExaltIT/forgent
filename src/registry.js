@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { findRegistryByName, loadRegistries } from "./config.js";
 import { copyDir, copyFileAs } from "./fs-helpers.js";
 import {
   assertSafeName,
@@ -52,11 +53,43 @@ function skillSourceRoot(skillName) {
   return `skills/${skillName}`;
 }
 
-export function resolveRegistryBase(ctx) {
-  const raw =
-    ctx.flags.registry ||
-    process.env.FORGENT_REGISTRY ||
-    DEFAULT_REGISTRY;
+/**
+ * Resolve the registry source, honoring the precedence:
+ *   1. --registry flag (name in config or raw url/path)
+ *   2. FORGENT_REGISTRY env (name in config or raw url/path)
+ *   3. forgent.config.json `defaultRegistry` (by name)
+ *   4. built-in DEFAULT_REGISTRY url
+ *
+ * For (1) and (2): if the value matches a configured registry name, that
+ * registry's url is used; otherwise the value is treated as a literal
+ * url-or-path.
+ */
+export async function resolveRegistryBase(ctx) {
+  const { registries, defaultRegistry } = await loadRegistries(ctx.cwd);
+
+  const nameOrLiteral = (value) => {
+    const match = findRegistryByName(registries, value);
+    return match ? match.url : value;
+  };
+
+  let raw;
+  if (ctx.flags.registry) {
+    raw = nameOrLiteral(ctx.flags.registry);
+  } else if (process.env.FORGENT_REGISTRY) {
+    raw = nameOrLiteral(process.env.FORGENT_REGISTRY);
+  } else if (defaultRegistry) {
+    const match = findRegistryByName(registries, defaultRegistry);
+    if (!match) {
+      throw new Error(
+        `forgent.config.json defaultRegistry "${defaultRegistry}" is not in registries[]. ` +
+          `Run \`forgent registry list\` to see configured registries.`,
+      );
+    }
+    raw = match.url;
+  } else {
+    raw = DEFAULT_REGISTRY;
+  }
+
   if (isHttpUrl(raw)) {
     return { base: trimTrailingSlash(raw), kind: "url" };
   }
@@ -99,7 +132,7 @@ async function readText(filePath) {
 }
 
 export async function loadRegistry(ctx) {
-  const { base, kind } = resolveRegistryBase(ctx);
+  const { base, kind } = await resolveRegistryBase(ctx);
   const manifestLocator =
     kind === "url" ? joinUrl(base, MANIFEST_FILE) : path.join(base, MANIFEST_FILE);
   const raw =
