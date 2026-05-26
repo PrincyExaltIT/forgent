@@ -11,6 +11,7 @@ import { runProviders } from "../src/commands/providers.js";
 import { runValidateRegistry } from "../src/commands/validate-registry.js";
 import { runDoctor } from "../src/commands/doctor.js";
 import { runVerify } from "../src/commands/verify.js";
+import { runHashFiles } from "../src/commands/hash-files.js";
 import { VERSION } from "../src/version.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -28,6 +29,7 @@ Usage:
   forgent init [--provider <p>] [--dest <d>] Persist defaults in forgent.config.json
   forgent validate-registry                  Validate the registry manifest
   forgent verify                             Re-hash installed files vs forgent.lock.json
+  forgent hash-files [--registry <path>]     Diff manifest sha256 vs computed (local registry)
   forgent doctor                             Diagnose the local install + registry
   forgent --version | -V | version           Print the forgent version
   forgent help                               Show this help text
@@ -139,6 +141,9 @@ async function main() {
       return;
     case "verify":
       await runVerify(ctx);
+      return;
+    case "hash-files":
+      await runHashFiles(ctx);
       return;
     case "doctor":
       await runDoctor(ctx);
