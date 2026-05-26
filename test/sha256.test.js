@@ -112,7 +112,27 @@ test("sha256: url install with mismatching hash errors with both hashes", async 
   }
 });
 
-test("sha256: url install without manifest hash warns once but succeeds", async () => {
+test("sha256: url install without manifest hash errors by default (strict is the 1.0 default)", async () => {
+  const body = "# unhashed\n";
+  const { server, url } = await withFixture(body, { withHash: false });
+  const installDir = await mkTmp("forgent-sha-default-strict-");
+  const cwd = await mkTmp("forgent-sha-default-strict-cwd-");
+  try {
+    const r = await runCLI(
+      ["add", "--provider", "claude", "hello", "--dest", installDir, "--registry", url],
+      { cwd },
+    );
+    assert.notEqual(r.code, 0);
+    assert.match(r.stderr, /strict-sha256/);
+    assert.match(r.stderr, /--no-strict-sha256/);
+  } finally {
+    await rmTmp(installDir);
+    await rmTmp(cwd);
+    await stop(server);
+  }
+});
+
+test("sha256: --no-strict-sha256 opts out and installs with a WARN", async () => {
   const body = "# unhashed\n";
   const { server, url } = await withFixture(body, { withHash: false });
   const installDir = await mkTmp("forgent-sha-warn-");
@@ -128,6 +148,7 @@ test("sha256: url install without manifest hash warns once but succeeds", async 
         installDir,
         "--registry",
         url,
+        "--no-strict-sha256",
       ],
       { cwd },
     );
@@ -140,7 +161,55 @@ test("sha256: url install without manifest hash warns once but succeeds", async 
   }
 });
 
-test("sha256: FORGENT_STRICT_SHA256=1 rejects manifests without hash", async () => {
+test("sha256: FORGENT_STRICT_SHA256=0 opts out and installs with a WARN", async () => {
+  const body = "# unhashed\n";
+  const { server, url } = await withFixture(body, { withHash: false });
+  const installDir = await mkTmp("forgent-sha-env-optout-");
+  const cwd = await mkTmp("forgent-sha-env-optout-cwd-");
+  try {
+    const r = await runCLI(
+      ["add", "--provider", "claude", "hello", "--dest", installDir, "--registry", url],
+      { cwd, env: { FORGENT_STRICT_SHA256: "0" } },
+    );
+    assert.equal(r.code, 0, r.stderr);
+    assert.match(r.stderr, /WARN.*sha256/);
+  } finally {
+    await rmTmp(installDir);
+    await rmTmp(cwd);
+    await stop(server);
+  }
+});
+
+test("sha256: --no-strict-sha256 overrides FORGENT_STRICT_SHA256=1 (CLI flag wins)", async () => {
+  const body = "# unhashed\n";
+  const { server, url } = await withFixture(body, { withHash: false });
+  const installDir = await mkTmp("forgent-sha-flag-wins-");
+  const cwd = await mkTmp("forgent-sha-flag-wins-cwd-");
+  try {
+    const r = await runCLI(
+      [
+        "add",
+        "--provider",
+        "claude",
+        "hello",
+        "--dest",
+        installDir,
+        "--registry",
+        url,
+        "--no-strict-sha256",
+      ],
+      { cwd, env: { FORGENT_STRICT_SHA256: "1" } },
+    );
+    assert.equal(r.code, 0, r.stderr);
+    assert.match(r.stderr, /WARN.*sha256/);
+  } finally {
+    await rmTmp(installDir);
+    await rmTmp(cwd);
+    await stop(server);
+  }
+});
+
+test("sha256: FORGENT_STRICT_SHA256=1 rejects manifests without hash (explicit opt-in matches default)", async () => {
   const body = "# unhashed\n";
   const { server, url } = await withFixture(body, { withHash: false });
   const installDir = await mkTmp("forgent-sha-strict-env-");
@@ -159,7 +228,7 @@ test("sha256: FORGENT_STRICT_SHA256=1 rejects manifests without hash", async () 
   }
 });
 
-test("sha256: --strict-sha256 flag rejects manifests without hash", async () => {
+test("sha256: --strict-sha256 flag rejects manifests without hash (explicit opt-in matches default)", async () => {
   const body = "# unhashed\n";
   const { server, url } = await withFixture(body, { withHash: false });
   const installDir = await mkTmp("forgent-sha-strict-flag-");
