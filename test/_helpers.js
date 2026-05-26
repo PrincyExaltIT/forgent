@@ -37,10 +37,16 @@ export async function writeText(p, content) {
   await fs.writeFile(p, content, "utf8");
 }
 
-/** Build a fake registry under `root` with a single skill folder. */
+/**
+ * Build a fake registry under `root` with a single skill folder.
+ *
+ * `filesOverride` lets security tests inject any `files[]` shape (including
+ * malicious `path` values). When supplied, source files are NOT materialized —
+ * the test asserts the CLI rejects before fetching.
+ */
 export async function seedRegistry(
   root,
-  { skillName = "demo", body = "# Demo\nhello\n" } = {},
+  { skillName = "demo", body = "# Demo\nhello\n", filesOverride = null } = {},
 ) {
   const manifest = {
     name: "test",
@@ -48,14 +54,16 @@ export async function seedRegistry(
       {
         name: skillName,
         description: `Test skill ${skillName}`,
-        files: [{ path: "SKILL.md", type: "skill:main" }],
+        files: filesOverride ?? [{ path: "SKILL.md", type: "skill:main" }],
       },
     ],
   };
   await writeText(path.join(root, "registry.json"), JSON.stringify(manifest, null, 2));
-  await writeText(
-    path.join(root, "skills", skillName, "SKILL.md"),
-    `---\nname: ${skillName}\ndescription: Test skill ${skillName}\n---\n\n${body}`,
-  );
+  if (!filesOverride) {
+    await writeText(
+      path.join(root, "skills", skillName, "SKILL.md"),
+      `---\nname: ${skillName}\ndescription: Test skill ${skillName}\n---\n\n${body}`,
+    );
+  }
   return { skillName };
 }

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { copyFileAs, exists } from "../fs-helpers.js";
+import { assertSafeName } from "../path-safety.js";
 
 export const name = "codex";
 export const description =
@@ -20,6 +21,7 @@ function targetFile(installDir, skillName) {
 }
 
 export async function install({ installDir, skillName, sourceDir, force, dryRun }) {
+  assertSafeName(skillName, "skillName");
   const variantPath = path.join(sourceDir, VARIANT_FILE(skillName));
   const fallbackPath = path.join(sourceDir, MAIN_SOURCE_FILE);
   let sourceFile;
@@ -45,6 +47,7 @@ export async function install({ installDir, skillName, sourceDir, force, dryRun 
 }
 
 export async function remove({ installDir, skillName, dryRun }) {
+  assertSafeName(skillName, "skillName");
   const target = targetFile(installDir, skillName);
   if (!(await exists(target))) {
     throw new Error(`codex: no installed file at ${target}`);

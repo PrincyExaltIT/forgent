@@ -1,14 +1,33 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { copyDir, copyFileAs } from "./fs-helpers.js";
+import {
+  assertSafeName,
+  assertSafeRelativePath,
+  safeJoin,
+} from "./path-safety.js";
 
 export const DEFAULT_REGISTRY =
   "https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main";
 
 const MANIFEST_FILE = "registry.json";
+const DEFAULT_TIMEOUT_MS = 30_000;
+const USER_AGENT = "forgent/0.1.0 (+https://github.com/PrincyExaltIT/forgent)";
 
 function isHttpUrl(s) {
   return /^https?:\/\//i.test(s);
+}
+
+function getTimeoutMs() {
+  const raw = process.env.FORGENT_TIMEOUT_MS;
+  if (!raw) return DEFAULT_TIMEOUT_MS;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 1 || String(n) !== raw.trim()) {
+    throw new Error(
+      `FORGENT_TIMEOUT_MS must be a positive integer, got: ${JSON.stringify(raw)}`,
+    );
+  }
+  return n;
 }
 
 function trimTrailingSlash(s) {
@@ -35,11 +54,25 @@ export function resolveRegistryBase(ctx) {
 }
 
 async function fetchText(url) {
+  if (!isHttpUrl(url)) {
+    throw new Error(`refuse to fetch non-http(s) URL: ${url}`);
+  }
+  const ms = getTimeoutMs();
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), ms);
   let res;
   try {
-    res = await fetch(url);
+    res = await fetch(url, {
+      signal: ac.signal,
+      headers: { "User-Agent": USER_AGENT },
+    });
   } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error(`timeout fetching ${url} after ${ms}ms`);
+    }
     throw new Error(`network error fetching ${url}: ${err.message}`);
+  } finally {
+    clearTimeout(timer);
   }
   if (!res.ok) {
     throw new Error(`fetch ${url} failed: HTTP ${res.status} ${res.statusText}`);
@@ -71,6 +104,34 @@ export async function loadRegistry(ctx) {
   if (!Array.isArray(items)) {
     throw new Error(`${manifestLocator} must have an "items" array`);
   }
+  for (const item of items) {
+    if (!item || typeof item !== "object") {
+      throw new Error(`${manifestLocator}: every item must be an object`);
+    }
+    try {
+      assertSafeName(item.name, "skill.name");
+    } catch (err) {
+      throw new Error(`${manifestLocator}: ${err.message}`);
+    }
+    if (item.files !== undefined && !Array.isArray(item.files)) {
+      throw new Error(
+        `${manifestLocator}: skill "${item.name}": "files" must be an array if present`,
+      );
+    }
+    for (const file of item.files || []) {
+      const fileObj = typeof file === "string" ? { path: file } : file;
+      if (!fileObj || typeof fileObj !== "object") {
+        throw new Error(
+          `${manifestLocator}: skill "${item.name}": file entries must be strings or objects`,
+        );
+      }
+      try {
+        assertSafeRelativePath(fileObj.path, `skill "${item.name}" file.path`);
+      } catch (err) {
+        throw new Error(`${manifestLocator}: ${err.message}`);
+      }
+    }
+  }
   return { base, kind, name: parsed.name || "default", items, source: manifestLocator };
 }
 
@@ -91,18 +152,20 @@ export function skillFiles(skill) {
 }
 
 export async function materializeSkill(registry, skill, destDir, { dryRun = false } = {}) {
+  assertSafeName(skill.name, "skill.name");
   const root = skillSourceRoot(skill.name);
   if (!dryRun) await fs.mkdir(destDir, { recursive: true });
 
   if (registry.kind === "fs") {
-    const sourceDir = path.join(registry.base, root);
+    const sourceDir = safeJoin(registry.base, root);
     await copyDir(sourceDir, destDir, dryRun);
     return destDir;
   }
 
   for (const file of skillFiles(skill)) {
+    assertSafeRelativePath(file.path, `skill "${skill.name}" file.path`);
     const url = joinUrl(registry.base, `${root}/${file.path}`);
-    const target = path.join(destDir, file.path);
+    const target = safeJoin(destDir, file.path);
     if (dryRun) {
       console.log(`[dry-run] fetch ${url} -> ${target}`);
       continue;
@@ -115,10 +178,11 @@ export async function materializeSkill(registry, skill, destDir, { dryRun = fals
 }
 
 export async function listSkillFilePaths(registry, skill) {
+  assertSafeName(skill.name, "skill.name");
   if (registry.kind === "url") {
     return skillFiles(skill).map((f) => f.path);
   }
-  const sourceDir = path.join(registry.base, skillSourceRoot(skill.name));
+  const sourceDir = safeJoin(registry.base, skillSourceRoot(skill.name));
   const out = [];
   async function visit(dir, rel) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -134,10 +198,11 @@ export async function listSkillFilePaths(registry, skill) {
 }
 
 export function skillSourceLocator(registry, skill) {
+  assertSafeName(skill.name, "skill.name");
   const rel = skillSourceRoot(skill.name);
   return registry.kind === "url"
     ? joinUrl(registry.base, rel)
-    : path.join(registry.base, rel);
+    : safeJoin(registry.base, rel);
 }
 
 export { copyFileAs };

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { copyDir, exists } from "../fs-helpers.js";
+import { assertSafeName } from "../path-safety.js";
 
 export const name = "claude";
 export const description =
@@ -12,6 +13,7 @@ export function defaultInstallDir() {
 }
 
 export async function install({ installDir, skillName, sourceDir, force, dryRun }) {
+  assertSafeName(skillName, "skillName");
   const target = path.join(installDir, skillName);
   if (await exists(target)) {
     if (!force) {
@@ -28,6 +30,7 @@ export async function install({ installDir, skillName, sourceDir, force, dryRun 
 }
 
 export async function remove({ installDir, skillName, dryRun }) {
+  assertSafeName(skillName, "skillName");
   const target = path.join(installDir, skillName);
   if (!(await exists(target))) {
     throw new Error(`claude: no installed skill at ${target}`);
