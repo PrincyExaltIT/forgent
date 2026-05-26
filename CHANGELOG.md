@@ -4,11 +4,14 @@ All notable changes to forgent are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-While the major version is 0.x, breaking changes may land in minor releases.
 
 ## [Unreleased]
 
-This section will be promoted to `[1.0.0]` at release time.
+## [1.0.0] - 2026-05-26
+
+The 1.0 line. Stability promise applies from this release onward (see README
+*Stability* section): CLI flag surface, manifest schema, lockfile shape, and
+exit codes are the public API.
 
 ### Changed
 - **BREAKING**: `--strict-sha256` is now the default. `forgent add` against
@@ -19,13 +22,49 @@ This section will be promoted to `[1.0.0]` at release time.
   var still work as explicit opt-ins (now no-ops matching the default).
   Rationale: this was the planned 1.0 behaviour. The 0.x soft default
   existed as a migration window for third-party registries to add hashes.
+- `resolveRegistryBase` is now `async`. Internal API change — does not
+  affect CLI users. Programmatic importers should `await` the call.
 
 ### Added
-- **Stability promise.** README now documents the semver contract for
-  ≥ 1.0: CLI flag surface, manifest schema, lockfile shape, and exit
-  codes are the public API. Internal `src/*.js` modules are not public.
-  The default registry URL is stable but may move to a CDN domain
-  post-1.0 without a major bump.
+- **`forgent registry` subcommand** for multi-registry workflows:
+  - `registry list` — print configured registries (`*` marks default).
+  - `registry add <name> <url-or-path> [--default] [--force]` — persist
+    a named registry in `forgent.config.json`. Name validated via
+    `assertSafeName` (kebab-case).
+  - `registry remove <name>` — drop one; clears `defaultRegistry` if it
+    was the default.
+  - `registry set-default <name>` — switch the default.
+
+  Resolution order for the active registry is now:
+  1. `--registry <value>` (name match in config, else literal url/path).
+  2. `FORGENT_REGISTRY` env (same name-or-literal interpretation).
+  3. `forgent.config.json` `defaultRegistry` (by name).
+  4. Built-in default URL.
+
+  `forgent.config.json` gains optional `registries[]` + `defaultRegistry`
+  fields. Existing configs without these fields keep working (treated as
+  zero configured registries).
+
+- **`forgent hash-files [--registry <path>]`** — walk every `items[].files[]`
+  entry, compute sha256, diff against the manifest-declared hash. Prints
+  per-file `match` / `MISMATCH` / `MISSING — add to manifest`, plus a summary.
+  Exits 1 on any mismatch or missing-from-manifest. Local-registry only —
+  HTTP URLs are rejected. For third-party registry authors keeping their
+  manifest in sync.
+
+- **`forgent validate-skill <name>`** — read every `skill:example` JSON file
+  declared by `<name>`, follow its `$schema` URL, and validate the example
+  against that schema. Built-in hand-rolled validator covers the keywords
+  emitted by `agent-skill/schema/subagent-output.schema.json`: `type`,
+  `required`, `properties`, `additionalProperties: false`, `enum`, `pattern`,
+  `minLength`, `minimum`, `items` (single subschema), local `$ref`
+  (`#/$defs/...`). Unsupported keywords (`maxLength`, `oneOf`, `allOf`, …)
+  emit a single WARN per keyword then skip the constraint. Exits 1 on FAIL.
+
+- **Stability promise** documented in README §Stability. forgent ≥ 1.0
+  follows semver. Internal `src/*.js` modules are not public — pin to a
+  major if you import them programmatically. The default registry URL is
+  stable but may move to a CDN domain post-1.0 without a major bump.
 
 ## [0.3.0] - 2026-05-26
 
