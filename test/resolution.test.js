@@ -88,7 +88,7 @@ test("resolveInstallDir: --dest flag wins over env and config", async () => {
         makeCtx(cwd, { dest: "/from/flag" }),
         fakeProvider,
       );
-      assert.equal(dir, path.resolve("/from/flag"));
+      assert.equal(dir, path.resolve(cwd, "/from/flag"));
     });
   } finally {
     await rmTmp(cwd);
@@ -101,7 +101,7 @@ test("resolveInstallDir: env beats config", async () => {
     await writeConfig(cwd, { installDir: "/from/config" });
     await withEnv({ FORGENT_INSTALL_DIR: "/from/env" }, async () => {
       const dir = await resolveInstallDir(makeCtx(cwd), fakeProvider);
-      assert.equal(dir, path.resolve("/from/env"));
+      assert.equal(dir, path.resolve(cwd, "/from/env"));
     });
   } finally {
     await rmTmp(cwd);
