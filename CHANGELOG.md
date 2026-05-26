@@ -8,6 +8,56 @@ While the major version is 0.x, breaking changes may land in minor releases.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-26
+
+Supply chain integrity: registries can now ship per-file SHA256 checksums,
+skill consumers can pin a version, and every install is recorded in a
+`forgent.lock.json` that a new `forgent verify` command re-checks.
+
+### Added
+- **SHA256 file verification.** Manifests may declare `files[].sha256`
+  (lowercase hex). When present, forgent verifies the fetched body matches
+  before writing — a mismatch aborts the install with both hashes in the
+  error. When absent, forgent emits a one-time `WARN` per skill and proceeds.
+- `--strict-sha256` flag (and `FORGENT_STRICT_SHA256=1` env var) to refuse
+  any install whose manifest entry omits a sha256. For orgs that want to
+  enforce integrity across all registries.
+- **`skill@version` syntax.** `forgent add foo@1.2.3` pins to that exact
+  version. The registry must declare `items[].version`; otherwise the
+  install errors with a clear message ("registry X@Y does not declare a
+  version for skill 'foo'; remove the @1.2.3 pin or upgrade the registry").
+  Without a pin, behavior is unchanged.
+- **`forgent.lock.json`.** Every successful `add` records the installed
+  skill's provider, source registry name+version, resolved skill version,
+  and per-file sha256 in a lockfile next to `forgent.config.json`. Commit
+  it to your repo for reproducible installs. `forgent remove` deletes the
+  matching entry. `--dry-run` skips the write.
+- **`forgent verify` command.** Re-hashes installed files against
+  `forgent.lock.json` and reports `OK`/`FAIL` per file. Exits 1 on any
+  mismatch or missing file. No network — local-only check.
+- Each provider exports a `targetPath(installDir, skillName)` helper used
+  by `verify` to locate installed files without re-implementing per-provider
+  install conventions.
+- JSON Schema: `$defs/file` accepts `sha256` (64-char lowercase hex);
+  `$defs/item.version` reservation is now validated at runtime via
+  `assertOptionalSemver` (was schema-only in 0.2.0).
+
+### Changed
+- `loadRegistry` now rejects manifests whose `items[].version` is not a
+  semver string and whose `files[].sha256` is not a 64-char hex string.
+- README has a new "Integrity & lockfile" section and the "What this is
+  not" disclaimer no longer claims forgent ships without a lockfile.
+
+### Notes
+- Registries without sha256 still install (with WARN). The plan is to flip
+  the default in 1.0; until then, registries can roll out sha256
+  progressively. Pinning to `forgent@0.3.0` in agent-skill CI is recommended.
+- **fs-mode (`--registry <local-path>`) skips per-file fetch verification.**
+  Whole-directory copy doesn't iterate per-manifest-file. The lockfile is
+  still written and `verify` still works against the installed files.
+- Lockfile entries are sorted by skill name, files within each entry sorted
+  by path — for stable diffs when committed.
+
 ## [0.2.0] - 2026-05-26
 
 First release with the security + validation + industrialization work that

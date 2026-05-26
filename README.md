@@ -98,7 +98,12 @@ npx forgent info angular-review
 # install for a specific provider
 npx forgent add --provider claude angular-review angular-review-kata-rendering-events
 npx forgent add --provider copilot angular-review
-npx forgent add --provider cursor angular-review
+
+# pin to an exact version (registry must declare items[].version)
+npx forgent add --provider claude angular-review@0.1.0
+
+# verify installed files match the lockfile (no network)
+npx forgent verify --provider claude
 
 # uninstall
 npx forgent remove --provider claude angular-review
@@ -109,15 +114,67 @@ npx forgent init --provider claude
 npx forgent add angular-review
 ```
 
+## Integrity & lockfile
+
+Registries can ship a SHA256 for each file:
+
+```json
+{
+  "files": [
+    { "path": "SKILL.md", "type": "skill:main", "sha256": "abc...64-hex-chars..." }
+  ]
+}
+```
+
+When `sha256` is present, forgent verifies the fetched body matches before
+writing — a mismatch aborts with both hashes in the error. When absent, you
+get one `WARN` per skill and the install proceeds. To refuse any install
+without a sha256, pass `--strict-sha256` (or set `FORGENT_STRICT_SHA256=1`).
+
+`forgent add foo@1.2.3` pins to an exact version. The registry must declare
+`items[].version`; otherwise the install errors with a clear message. Use
+this when you want the same skill version across machines or CI runs.
+
+Each successful `add` records what was installed in `forgent.lock.json`
+next to `forgent.config.json`. Shape:
+
+```json
+{
+  "lockfileVersion": 1,
+  "skills": {
+    "angular-review": {
+      "registry": { "name": "agent-skill", "version": "0.1.0", "source": "https://raw.../main" },
+      "skillVersion": "0.1.0",
+      "provider": "claude",
+      "installedAt": "2026-05-26T14:32:11.000Z",
+      "files": [{ "path": "SKILL.md", "sha256": "..." }]
+    }
+  }
+}
+```
+
+Commit the lockfile to your repo and run `forgent verify` in CI to confirm
+nobody (and nothing) has touched the installed skill files since `add`.
+`verify` re-hashes each installed file against the lockfile and exits 1 on
+any mismatch — no network, purely local.
+
+`forgent remove` deletes the matching entry. `--dry-run` skips the write.
+
+> **fs-mode caveat:** when `--registry` is a local path, the install is a
+> whole-directory copy and per-file fetch verification is skipped. The
+> lockfile is still written and `verify` still works against installed files.
+
 ## Commands
 
 - `forgent providers` — list supported providers and their default install dirs.
 - `forgent list` — list every skill in the registry with its description.
 - `forgent info <name>` — show one skill's metadata and the files that would be copied.
-- `forgent add --provider <p> <name>...` — copy one or more skills into provider `<p>`'s install dir. Refuses to overwrite unless `--force`.
+- `forgent add --provider <p> <name>[@<version>]...` — copy one or more skills into provider `<p>`'s install dir. Refuses to overwrite unless `--force`. Pinning to `@<version>` requires the registry to declare `items[].version`.
 - `forgent remove --provider <p> <name>` — delete an installed skill from provider `<p>`'s install dir.
 - `forgent init [--provider <p>] [--dest <d>]` — persist defaults in `forgent.config.json` so future commands don't need the flag.
 - `forgent validate-registry` — load and validate the registry manifest (fail-fast for CI). Honors `--registry`.
+- `forgent verify` — re-hash installed files against `forgent.lock.json` and report any drift. Exits 1 on FAIL. No network.
+- `forgent doctor` — diagnose the local install: Node version, OS/arch, provider, install dir writability, registry reachability.
 
 ## Flags
 
@@ -126,6 +183,7 @@ npx forgent add angular-review
 - `--dest <path>` — override the install directory (otherwise: provider default, or `FORGENT_INSTALL_DIR`, or `forgent.config.json`).
 - `--force` — overwrite an existing install on `add`.
 - `--dry-run` — print what would happen, write nothing.
+- `--strict-sha256` — refuse to install any file whose manifest entry omits a sha256. Same as `FORGENT_STRICT_SHA256=1`.
 
 ## Resolution order
 
@@ -208,7 +266,7 @@ the test fixture at `test/fixtures/registry/`, and end-to-end HTTP fetches again
 
 - **Not a runtime.** After `add`, the CLI is uninvolved. Your agent reads the installed file directly.
 - **Not a frontmatter translator.** The registry's frontmatter is Claude-shaped; you adjust per provider after install.
-- **Not a package manager.** No lockfile, no version resolution, no update command. Re-run `add --force` to fetch the latest registry version, knowing it will overwrite your local edits.
+- **Not a full package manager.** There is a lockfile and exact-version pinning, but no semver range resolution, no transitive deps, no `update` command. To pull a newer version: re-run `add --force` (it will overwrite your local edits).
 
 ## License
 
