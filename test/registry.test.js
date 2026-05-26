@@ -3,8 +3,12 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
+import fsSync from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { BIN, mkTmp, pathExists, rmTmp } from "./_helpers.js";
+
+const RUN_TMP = fsSync.mkdtempSync(path.join(os.tmpdir(), "forgent-reg-cwd-"));
 
 function startServer(handler) {
   const server = http.createServer(handler);
@@ -23,6 +27,7 @@ function stop(server) {
 function runCLI(args, env = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [BIN, ...args], {
+      cwd: RUN_TMP,
       env: { ...process.env, ...env },
     });
     let stdout = "";

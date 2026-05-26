@@ -1,13 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { BIN, FIXTURE_REGISTRY, mkTmp, pathExists, rmTmp } from "./_helpers.js";
+
+// Per-module tmp cwd so `add`/`remove` lockfile writes never pollute the repo.
+const RUN_TMP = fs.mkdtempSync(path.join(os.tmpdir(), "forgent-cli-cwd-"));
 
 function run(args, { env = {}, cwd } = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [BIN, ...args], {
-      cwd: cwd || path.dirname(BIN),
+      cwd: cwd || RUN_TMP,
       env: {
         ...process.env,
         FORGENT_REGISTRY: FIXTURE_REGISTRY,
