@@ -210,6 +210,8 @@ any mismatch — no network, purely local.
 - `forgent init [--provider <p>] [--dest <d>]` — persist defaults in `forgent.config.json` so future commands don't need the flag.
 - `forgent validate-registry` — load and validate the registry manifest (fail-fast for CI). Honors `--registry`.
 - `forgent verify` — re-hash installed files against `forgent.lock.json` and report any drift. Exits 1 on FAIL. No network.
+- `forgent hash-files [--registry <path>]` — walk a local registry, compare each manifest `sha256` against the on-disk file, and exit 1 on any MISMATCH or MISSING entry. Local-only utility for registry authors keeping `sha256` fields in sync. HTTP registries are rejected.
+- `forgent validate-skill <name>` — read each `skill:example` `.json` file declared by the skill, fetch its `$schema` (when present), and validate. Hand-rolled minimal validator covers `type`, `required`, `properties`, `additionalProperties:false`, `enum`, `pattern`, `minLength`, `minimum`, `items`, and local `$ref` (`#/$defs/...`). Unknown keywords emit one `WARN` and are skipped. Examples without `$schema` are skipped (info, not failure).
 - `forgent doctor` — diagnose the local install: Node version, OS/arch, provider, install dir writability, registry reachability.
 
 ## Flags
