@@ -8,6 +8,25 @@ While the major version is 0.x, breaking changes may land in minor releases.
 
 ## [Unreleased]
 
+This section will be promoted to `[1.0.0]` at release time.
+
+### Changed
+- **BREAKING**: `--strict-sha256` is now the default. `forgent add` against
+  a registry whose manifest omits per-file `sha256` now errors (exit 1)
+  instead of warning. Pass `--no-strict-sha256` (new flag) or set
+  `FORGENT_STRICT_SHA256=0` to restore 0.x behaviour during migration.
+  The existing `--strict-sha256` flag and `FORGENT_STRICT_SHA256=1` env
+  var still work as explicit opt-ins (now no-ops matching the default).
+  Rationale: this was the planned 1.0 behaviour. The 0.x soft default
+  existed as a migration window for third-party registries to add hashes.
+
+### Added
+- **Stability promise.** README now documents the semver contract for
+  ≥ 1.0: CLI flag surface, manifest schema, lockfile shape, and exit
+  codes are the public API. Internal `src/*.js` modules are not public.
+  The default registry URL is stable but may move to a CDN domain
+  post-1.0 without a major bump.
+
 ## [0.3.0] - 2026-05-26
 
 Supply chain integrity: registries can now ship per-file SHA256 checksums,
