@@ -61,8 +61,8 @@ $ cat forgent.lock.json
   "lockfileVersion": 1,
   "skills": {
     "angular-review": {
-      "registry": { "name": "agent-skill", "version": "0.2.0", "source": "https://raw.../main" },
-      "skillVersion": "0.1.0",
+      "registry": { "name": "agent-skill", "version": "0.3.1", "source": "https://raw.../main" },
+      "skillVersion": "0.1.2",
       "provider": "claude",
       "installedAt": "2026-05-26T10:46:33.021Z",
       "files": [{ "path": "SKILL.md", "sha256": "d095f575..." }, ...]

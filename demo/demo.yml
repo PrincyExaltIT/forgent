@@ -27,7 +27,8 @@ letterSpacing: 0
 command: bash
 cwd: null
 env:
-  PS1: "$ "
+  # demo-script.sh emits its own coloured prompt — terminalizer's PS1 would be
+  # dead anyway since the shell runs non-interactively.
   FORGENT_TIMEOUT_MS: "10000"
 
 theme:
