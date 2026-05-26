@@ -3,7 +3,7 @@ import { loadRegistry, resolveRegistryBase, sha256OfString } from "../registry.j
 import { safeJoin } from "../path-safety.js";
 
 export async function runHashFiles(ctx) {
-  const resolved = resolveRegistryBase(ctx);
+  const resolved = await resolveRegistryBase(ctx);
   if (resolved.kind !== "fs") {
     console.error(
       `hash-files only works against a local registry path (got: ${resolved.base})`,
