@@ -46,6 +46,42 @@ forgent add --provider claude angular-review
 
 Requires Node 18+ (uses the global `fetch`).
 
+## Quick tour
+
+```console
+$ npx forgent list
+angular-review                        Multi-reviewer Angular code audit (security, architecture, performance, a11y/errors, optional project-compliance) on the current branch or a specified diff, with optional empirical DOM validation via the Playwright MCP server.
+angular-review-kata-rendering-events  Variant of angular-review pre-wired for the R-KATA Rendering Events brief: embeds R-KATA-001..013 rules (positioning time-to-pixels, overlap, responsiveness). Otherwise identical to angular-review.
+
+$ npx forgent add --provider claude angular-review
+added angular-review (claude) -> ~/.claude/skills/angular-review
+
+$ cat forgent.lock.json
+{
+  "lockfileVersion": 1,
+  "skills": {
+    "angular-review": {
+      "registry": { "name": "agent-skill", "version": "0.2.0", "source": "https://raw.../main" },
+      "skillVersion": "0.1.0",
+      "provider": "claude",
+      "installedAt": "2026-05-26T10:46:33.021Z",
+      "files": [{ "path": "SKILL.md", "sha256": "d095f575..." }, ...]
+    }
+  }
+}
+
+$ npx forgent verify --provider claude
+OK   angular-review/SKILL.md
+OK   angular-review/ORCHESTRATION.md
+...
+verified 1 skill(s)
+```
+
+A scripted version of this tour lives in [`demo/`](./demo/) — `demo/demo-script.sh`
+plus a [terminalizer](https://github.com/faressoft/terminalizer) config to
+regenerate the GIF when commands change. The `demo/` folder is git-only; it does
+not ship to npm.
+
 ## Supported providers
 
 | Provider   | Default install dir (per OS)                                           | File layout                          |
