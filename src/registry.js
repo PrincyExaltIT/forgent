@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { copyDir, copyFileAs } from "./fs-helpers.js";
@@ -8,9 +9,11 @@ import {
 } from "./path-safety.js";
 import {
   assertFileType,
+  assertOptionalSemver,
   assertOptionalString,
   assertOptionalStringArray,
   assertSemver,
+  assertSha256,
 } from "./registry-schema.js";
 import { VERSION } from "./version.js";
 
@@ -130,6 +133,7 @@ export async function loadRegistry(ctx) {
         `skill "${item.name}" tags`,
         (tag) => assertSafeName(tag, "tag"),
       );
+      assertOptionalSemver(item.version, `skill "${item.name}" version`);
     } catch (err) {
       throw new Error(`${manifestLocator}: ${err.message}`);
     }
@@ -148,6 +152,7 @@ export async function loadRegistry(ctx) {
       try {
         assertSafeRelativePath(fileObj.path, `skill "${item.name}" file.path`);
         assertFileType(fileObj.type, `skill "${item.name}" file.type`);
+        assertSha256(fileObj.sha256, `skill "${item.name}" file.sha256`);
       } catch (err) {
         throw new Error(`${manifestLocator}: ${err.message}`);
       }
@@ -172,6 +177,24 @@ export function findSkill(registry, name) {
   return skill;
 }
 
+export function findSkillVersioned(registry, name, requestedVersion) {
+  const skill = findSkill(registry, name);
+  if (requestedVersion == null) return skill;
+  if (skill.version === undefined) {
+    throw new Error(
+      `registry "${registry.name}@${registry.version}" does not declare a version ` +
+        `for skill "${name}"; remove the @${requestedVersion} pin or upgrade the registry.`,
+    );
+  }
+  if (skill.version !== requestedVersion) {
+    throw new Error(
+      `skill "${name}" is at ${skill.version} in registry ` +
+        `"${registry.name}@${registry.version}", but you asked for @${requestedVersion}.`,
+    );
+  }
+  return skill;
+}
+
 export function skillFiles(skill) {
   if (Array.isArray(skill.files) && skill.files.length > 0) {
     return skill.files.map((f) => (typeof f === "string" ? { path: f } : f));
@@ -179,7 +202,27 @@ export function skillFiles(skill) {
   return [{ path: "SKILL.md" }];
 }
 
-export async function materializeSkill(registry, skill, destDir, { dryRun = false } = {}) {
+export function sha256OfString(s) {
+  return createHash("sha256").update(s, "utf8").digest("hex");
+}
+
+const warnedMissingHashFor = new Set();
+
+function isStrictSha256Mode(strictSha256) {
+  if (strictSha256) return true;
+  return process.env.FORGENT_STRICT_SHA256 === "1";
+}
+
+export function _resetSha256WarningsForTests() {
+  warnedMissingHashFor.clear();
+}
+
+export async function materializeSkill(
+  registry,
+  skill,
+  destDir,
+  { dryRun = false, strictSha256 = false } = {},
+) {
   assertSafeName(skill.name, "skill.name");
   const root = skillSourceRoot(skill.name);
   if (!dryRun) await fs.mkdir(destDir, { recursive: true });
@@ -190,6 +233,7 @@ export async function materializeSkill(registry, skill, destDir, { dryRun = fals
     return destDir;
   }
 
+  const strict = isStrictSha256Mode(strictSha256);
   for (const file of skillFiles(skill)) {
     assertSafeRelativePath(file.path, `skill "${skill.name}" file.path`);
     const url = joinUrl(registry.base, `${root}/${file.path}`);
@@ -199,6 +243,25 @@ export async function materializeSkill(registry, skill, destDir, { dryRun = fals
       continue;
     }
     const body = await fetchText(url);
+    if (file.sha256) {
+      const actual = sha256OfString(body);
+      if (actual !== file.sha256) {
+        throw new Error(
+          `sha256 mismatch for ${skill.name}/${file.path}: ` +
+            `manifest declared ${file.sha256}, fetched ${actual}`,
+        );
+      }
+    } else if (strict) {
+      throw new Error(
+        `--strict-sha256: skill "${skill.name}" file "${file.path}" has no sha256 in manifest`,
+      );
+    } else if (!warnedMissingHashFor.has(skill.name)) {
+      warnedMissingHashFor.add(skill.name);
+      console.error(
+        `WARN: skill "${skill.name}" has files without sha256 in the manifest; ` +
+          `forgent cannot verify integrity. Pass --strict-sha256 to enforce.`,
+      );
+    }
     await fs.mkdir(path.dirname(target), { recursive: true });
     await fs.writeFile(target, body, "utf8");
   }

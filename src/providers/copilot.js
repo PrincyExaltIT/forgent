@@ -34,6 +34,11 @@ function targetFile(installDir, skillName) {
   return path.join(installDir, `${skillName}${EXT}`);
 }
 
+export function targetPath(installDir, skillName) {
+  assertSafeName(skillName, "skillName");
+  return targetFile(installDir, skillName);
+}
+
 export async function install({ installDir, skillName, sourceDir, force, dryRun }) {
   assertSafeName(skillName, "skillName");
   const variantPath = path.join(sourceDir, VARIANT_FILE(skillName));

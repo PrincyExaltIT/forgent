@@ -12,6 +12,11 @@ export function defaultInstallDir() {
   return path.join(os.homedir(), ".claude", "skills");
 }
 
+export function targetPath(installDir, skillName) {
+  assertSafeName(skillName, "skillName");
+  return path.join(installDir, skillName);
+}
+
 export async function install({ installDir, skillName, sourceDir, force, dryRun }) {
   assertSafeName(skillName, "skillName");
   const target = path.join(installDir, skillName);

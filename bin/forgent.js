@@ -10,6 +10,7 @@ import { runRemove } from "../src/commands/remove.js";
 import { runProviders } from "../src/commands/providers.js";
 import { runValidateRegistry } from "../src/commands/validate-registry.js";
 import { runDoctor } from "../src/commands/doctor.js";
+import { runVerify } from "../src/commands/verify.js";
 import { VERSION } from "../src/version.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -22,17 +23,18 @@ Usage:
   forgent providers                          List supported providers
   forgent list                               List skills in the registry
   forgent info <name>                        Show one skill's metadata + files
-  forgent add --provider <p> <name>...       Copy skills into <p>'s install dir
+  forgent add --provider <p> <name>[@v]...   Copy skills into <p>'s install dir
   forgent remove --provider <p> <name>       Delete an installed skill
   forgent init [--provider <p>] [--dest <d>] Persist defaults in forgent.config.json
   forgent validate-registry                  Validate the registry manifest
+  forgent verify                             Re-hash installed files vs forgent.lock.json
   forgent doctor                             Diagnose the local install + registry
   forgent --version | -V | version           Print the forgent version
   forgent help                               Show this help text
 
 Flags:
   --provider <name>     Target provider: claude | copilot | codex | cursor.
-                        Required for add/remove unless persisted via
+                        Required for add/remove/verify unless persisted via
                         forgent.config.json or FORGENT_PROVIDER env var.
   --registry <url|path> Override the registry source. Accepts an HTTPS URL
                         (e.g. https://raw.githubusercontent.com/<owner>/<repo>/main/)
@@ -43,6 +45,13 @@ Flags:
                         from FORGENT_INSTALL_DIR / forgent.config.json.
   --force               Overwrite an existing skill on add.
   --dry-run             Print what would happen, change nothing.
+  --strict-sha256       Refuse to install any file whose manifest entry does
+                        not declare a sha256. Same as FORGENT_STRICT_SHA256=1.
+
+Versioning:
+  \`forgent add foo@1.2.3\` pins to that exact version. The registry must
+  declare items[].version for the skill; otherwise the install errors.
+  Without a pin, forgent installs whatever the registry currently serves.
 
 Principle (same as shadcn/ui):
   Skills are not "installed" as dependencies. \`add\` copies the source files
@@ -56,6 +65,7 @@ function parseArgs(argv) {
     dest: null,
     force: false,
     dryRun: false,
+    strictSha256: false,
   };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
@@ -65,6 +75,7 @@ function parseArgs(argv) {
     else if (a === "--dest") flags.dest = argv[++i];
     else if (a === "--force") flags.force = true;
     else if (a === "--dry-run") flags.dryRun = true;
+    else if (a === "--strict-sha256") flags.strictSha256 = true;
     else if (a === "-h" || a === "--help") positional.push("help");
     else positional.push(a);
   }
@@ -125,6 +136,9 @@ async function main() {
       return;
     case "validate-registry":
       await runValidateRegistry(ctx);
+      return;
+    case "verify":
+      await runVerify(ctx);
       return;
     case "doctor":
       await runDoctor(ctx);

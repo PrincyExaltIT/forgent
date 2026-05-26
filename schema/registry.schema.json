@@ -80,6 +80,11 @@
             "skill:reference",
             "skill:template"
           ]
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Lowercase hex SHA256 of the UTF-8 encoded file content. If present, forgent verifies the fetched body matches before writing. Manifests without this field still install, with a one-time WARN per skill (or a hard error under --strict-sha256 / FORGENT_STRICT_SHA256=1)."
         }
       }
     }

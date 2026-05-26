@@ -11,6 +11,8 @@ export const FILE_TYPES = Object.freeze([
 export const SEMVER_RE =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 
+export const SHA256_RE = /^[a-f0-9]{64}$/;
+
 export function assertOptionalString(v, kind = "value") {
   if (v === undefined) return;
   if (typeof v !== "string") {
@@ -39,6 +41,20 @@ export function assertSemver(v, kind = "version") {
   if (typeof v !== "string" || !SEMVER_RE.test(v)) {
     throw new Error(
       `invalid ${kind}: ${JSON.stringify(v)} — must be a semver string (e.g. "0.1.0")`,
+    );
+  }
+}
+
+export function assertOptionalSemver(v, kind = "version") {
+  if (v === undefined) return;
+  assertSemver(v, kind);
+}
+
+export function assertSha256(v, kind = "sha256") {
+  if (v === undefined) return;
+  if (typeof v !== "string" || !SHA256_RE.test(v)) {
+    throw new Error(
+      `invalid ${kind}: ${JSON.stringify(v)} — must be 64 lowercase hex chars (sha256 of UTF-8 file content)`,
     );
   }
 }
