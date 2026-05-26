@@ -6,6 +6,12 @@ import {
   assertSafeRelativePath,
   safeJoin,
 } from "./path-safety.js";
+import {
+  assertFileType,
+  assertOptionalString,
+  assertOptionalStringArray,
+  assertSemver,
+} from "./registry-schema.js";
 
 export const DEFAULT_REGISTRY =
   "https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main";
@@ -100,6 +106,13 @@ export async function loadRegistry(ctx) {
   } catch (err) {
     throw new Error(`${manifestLocator} is not valid JSON: ${err.message}`);
   }
+  try {
+    assertSafeName(parsed.name, "registry.name");
+    assertSemver(parsed.version, "registry.version");
+    assertOptionalString(parsed.homepage, "registry.homepage");
+  } catch (err) {
+    throw new Error(`${manifestLocator}: ${err.message}`);
+  }
   const items = parsed.items || parsed.skills;
   if (!Array.isArray(items)) {
     throw new Error(`${manifestLocator} must have an "items" array`);
@@ -110,6 +123,12 @@ export async function loadRegistry(ctx) {
     }
     try {
       assertSafeName(item.name, "skill.name");
+      assertOptionalString(item.description, `skill "${item.name}" description`);
+      assertOptionalStringArray(
+        item.tags,
+        `skill "${item.name}" tags`,
+        (tag) => assertSafeName(tag, "tag"),
+      );
     } catch (err) {
       throw new Error(`${manifestLocator}: ${err.message}`);
     }
@@ -127,12 +146,20 @@ export async function loadRegistry(ctx) {
       }
       try {
         assertSafeRelativePath(fileObj.path, `skill "${item.name}" file.path`);
+        assertFileType(fileObj.type, `skill "${item.name}" file.type`);
       } catch (err) {
         throw new Error(`${manifestLocator}: ${err.message}`);
       }
     }
   }
-  return { base, kind, name: parsed.name || "default", items, source: manifestLocator };
+  return {
+    base,
+    kind,
+    name: parsed.name,
+    version: parsed.version,
+    items,
+    source: manifestLocator,
+  };
 }
 
 export function findSkill(registry, name) {

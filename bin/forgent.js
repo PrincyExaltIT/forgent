@@ -8,6 +8,7 @@ import { runInfo } from "../src/commands/info.js";
 import { runAdd } from "../src/commands/add.js";
 import { runRemove } from "../src/commands/remove.js";
 import { runProviders } from "../src/commands/providers.js";
+import { runValidateRegistry } from "../src/commands/validate-registry.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(HERE, "..");
@@ -22,6 +23,7 @@ Usage:
   forgent add --provider <p> <name>...       Copy skills into <p>'s install dir
   forgent remove --provider <p> <name>       Delete an installed skill
   forgent init [--provider <p>] [--dest <d>] Persist defaults in forgent.config.json
+  forgent validate-registry                  Validate the registry manifest
   forgent help                               Show this help text
 
 Flags:
@@ -111,6 +113,9 @@ async function main() {
         process.exit(2);
       }
       await runRemove(ctx, positional[0]);
+      return;
+    case "validate-registry":
+      await runValidateRegistry(ctx);
       return;
     default:
       console.error(`error: unknown command "${command}"`);

@@ -36,6 +36,7 @@ function runCLI(args, env = {}) {
 test("registry: `add` fetches skill files over HTTP", async () => {
   const manifest = {
     name: "remote-test",
+    version: "0.0.0",
     items: [
       { name: "hello", description: "Hello from HTTP", files: [{ path: "SKILL.md" }] },
     ],
@@ -79,6 +80,7 @@ test("registry: `add` fetches skill files over HTTP", async () => {
 test("registry: `list` reads the remote manifest", async () => {
   const manifest = {
     name: "remote-test",
+    version: "0.0.0",
     items: [
       { name: "alpha", description: "first", files: [{ path: "SKILL.md" }] },
       { name: "beta", description: "second", files: [{ path: "SKILL.md" }] },
@@ -110,6 +112,7 @@ test("registry: clear error when the URL is unreachable", async () => {
 test("registry: FORGENT_REGISTRY env var is honored when --registry is absent", async () => {
   const manifest = {
     name: "remote-test",
+    version: "0.0.0",
     items: [{ name: "envskill", description: "via env", files: [{ path: "SKILL.md" }] }],
   };
   const { server, url } = await startServer((req, res) => {

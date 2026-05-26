@@ -192,6 +192,7 @@ test("security: registry with traversal skill.name is rejected at load", async (
   try {
     const manifest = {
       name: "evil",
+      version: "0.0.0",
       items: [
         {
           name: "../evil",
@@ -270,7 +271,7 @@ test("security: fetch sends a forgent User-Agent header", async () => {
     capturedUA = req.headers["user-agent"] ?? null;
     if (req.url === "/registry.json") {
       res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ name: "ua-test", items: [] }));
+      res.end(JSON.stringify({ name: "ua-test", version: "0.0.0", items: [] }));
     } else {
       res.statusCode = 404;
       res.end();
@@ -289,7 +290,7 @@ test("security: fetch sends a forgent User-Agent header", async () => {
 test("security: FORGENT_TIMEOUT_MS=non-integer errors clearly", async () => {
   // Use a reachable server so we'd succeed in absence of the bad env var
   const { server, url } = await startServer((req, res) => {
-    res.end(JSON.stringify({ name: "x", items: [] }));
+    res.end(JSON.stringify({ name: "x", version: "0.0.0", items: [] }));
   });
   try {
     const r = await runCLI(["list", "--registry", url], {

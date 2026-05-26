@@ -43,13 +43,22 @@ export async function writeText(p, content) {
  * `filesOverride` lets security tests inject any `files[]` shape (including
  * malicious `path` values). When supplied, source files are NOT materialized —
  * the test asserts the CLI rejects before fetching.
+ *
+ * `manifestOverride` replaces the manifest object entirely (escape hatch for
+ * validation tests that need shapes the default builder can't express).
  */
 export async function seedRegistry(
   root,
-  { skillName = "demo", body = "# Demo\nhello\n", filesOverride = null } = {},
+  {
+    skillName = "demo",
+    body = "# Demo\nhello\n",
+    filesOverride = null,
+    manifestOverride = null,
+  } = {},
 ) {
-  const manifest = {
+  const manifest = manifestOverride ?? {
     name: "test",
+    version: "0.0.0",
     items: [
       {
         name: skillName,
@@ -59,7 +68,7 @@ export async function seedRegistry(
     ],
   };
   await writeText(path.join(root, "registry.json"), JSON.stringify(manifest, null, 2));
-  if (!filesOverride) {
+  if (!manifestOverride && !filesOverride) {
     await writeText(
       path.join(root, "skills", skillName, "SKILL.md"),
       `---\nname: ${skillName}\ndescription: Test skill ${skillName}\n---\n\n${body}`,

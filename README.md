@@ -117,6 +117,7 @@ npx forgent add angular-review
 - `forgent add --provider <p> <name>...` — copy one or more skills into provider `<p>`'s install dir. Refuses to overwrite unless `--force`.
 - `forgent remove --provider <p> <name>` — delete an installed skill from provider `<p>`'s install dir.
 - `forgent init [--provider <p>] [--dest <d>]` — persist defaults in `forgent.config.json` so future commands don't need the flag.
+- `forgent validate-registry` — load and validate the registry manifest (fail-fast for CI). Honors `--registry`.
 
 ## Flags
 
@@ -143,8 +144,9 @@ declared skill file at `<base>/skills/<name>/<file>`.
 
 ```json
 {
-  "$schema": "https://forgent.dev/schema/registry.json",
+  "$schema": "https://raw.githubusercontent.com/PrincyExaltIT/forgent/main/schema/registry.schema.json",
   "name": "default",
+  "version": "0.1.0",
   "items": [
     {
       "name": "angular-review",
@@ -159,9 +161,15 @@ declared skill file at `<base>/skills/<name>/<file>`.
 }
 ```
 
-Paths in `files[].path` are relative to `<base>/skills/<item.name>/`. The
-shape is intentionally close to [shadcn/ui's registry schema](https://github.com/shadcn-ui/registry-template)
-so concepts transfer.
+Top-level `name` and `version` (semver) are required. Paths in `files[].path`
+are relative to `<base>/skills/<item.name>/`. `files[].type` is a closed enum
+(`skill:main`, `skill:doc`, `skill:codex`, `skill:copilot`, `skill:example`,
+`skill:reference`, `skill:template`). The full JSON Schema is at
+[`schema/registry.schema.json`](./schema/registry.schema.json) — point your
+editor at it for autocomplete and validation. The shape is intentionally close
+to [shadcn/ui's registry schema](https://github.com/shadcn-ui/registry-template)
+so concepts transfer. Run `forgent validate-registry --registry <url|path>`
+to fail-fast a manifest in CI.
 
 ### Host your own
 

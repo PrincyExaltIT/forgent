@@ -10,6 +10,7 @@ export async function runInfo(ctx, name) {
   const skill = findSkill(registry, name);
 
   console.log(`name        ${skill.name}`);
+  console.log(`registry    ${registry.name}@${registry.version}`);
   console.log(`description ${skill.description || ""}`);
   if (skill.tags?.length) console.log(`tags        ${skill.tags.join(", ")}`);
   console.log(`source      ${skillSourceLocator(registry, skill)}`);
