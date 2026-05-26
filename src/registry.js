@@ -12,13 +12,14 @@ import {
   assertOptionalStringArray,
   assertSemver,
 } from "./registry-schema.js";
+import { VERSION } from "./version.js";
 
 export const DEFAULT_REGISTRY =
   "https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main";
 
 const MANIFEST_FILE = "registry.json";
 const DEFAULT_TIMEOUT_MS = 30_000;
-const USER_AGENT = "forgent/0.1.0 (+https://github.com/PrincyExaltIT/forgent)";
+const USER_AGENT = `forgent/${VERSION} (+https://github.com/PrincyExaltIT/forgent)`;
 
 function isHttpUrl(s) {
   return /^https?:\/\//i.test(s);

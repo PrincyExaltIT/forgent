@@ -9,6 +9,8 @@ import { runAdd } from "../src/commands/add.js";
 import { runRemove } from "../src/commands/remove.js";
 import { runProviders } from "../src/commands/providers.js";
 import { runValidateRegistry } from "../src/commands/validate-registry.js";
+import { runDoctor } from "../src/commands/doctor.js";
+import { VERSION } from "../src/version.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(HERE, "..");
@@ -24,6 +26,8 @@ Usage:
   forgent remove --provider <p> <name>       Delete an installed skill
   forgent init [--provider <p>] [--dest <d>] Persist defaults in forgent.config.json
   forgent validate-registry                  Validate the registry manifest
+  forgent doctor                             Diagnose the local install + registry
+  forgent --version | -V | version           Print the forgent version
   forgent help                               Show this help text
 
 Flags:
@@ -84,6 +88,11 @@ async function main() {
     case "--help":
       console.log(HELP);
       return;
+    case "version":
+    case "--version":
+    case "-V":
+      console.log(VERSION);
+      return;
     case "providers":
       await runProviders();
       return;
@@ -116,6 +125,9 @@ async function main() {
       return;
     case "validate-registry":
       await runValidateRegistry(ctx);
+      return;
+    case "doctor":
+      await runDoctor(ctx);
       return;
     default:
       console.error(`error: unknown command "${command}"`);

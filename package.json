@@ -9,12 +9,15 @@
   "files": [
     "bin",
     "src",
+    "schema",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "node bin/forgent.js",
     "test": "node --test",
+    "doctor": "node bin/forgent.js doctor",
     "prepublishOnly": "npm test"
   },
   "engines": {
