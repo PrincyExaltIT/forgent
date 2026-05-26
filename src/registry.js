@@ -209,8 +209,13 @@ export function sha256OfString(s) {
 const warnedMissingHashFor = new Set();
 
 function isStrictSha256Mode(strictSha256) {
-  if (strictSha256) return true;
-  return process.env.FORGENT_STRICT_SHA256 === "1";
+  // Explicit opt-out wins: `--no-strict-sha256` (strictSha256 === false)
+  // or FORGENT_STRICT_SHA256=0 disables strict mode.
+  if (strictSha256 === false) return false;
+  if (process.env.FORGENT_STRICT_SHA256 === "0") return false;
+  // Otherwise strict is the default (1.0 behaviour). Explicit opt-in
+  // (`--strict-sha256` or FORGENT_STRICT_SHA256=1) is a no-op confirmation.
+  return true;
 }
 
 export function _resetSha256WarningsForTests() {
@@ -221,7 +226,7 @@ export async function materializeSkill(
   registry,
   skill,
   destDir,
-  { dryRun = false, strictSha256 = false } = {},
+  { dryRun = false, strictSha256 = null } = {},
 ) {
   assertSafeName(skill.name, "skill.name");
   const root = skillSourceRoot(skill.name);
@@ -253,13 +258,14 @@ export async function materializeSkill(
       }
     } else if (strict) {
       throw new Error(
-        `--strict-sha256: skill "${skill.name}" file "${file.path}" has no sha256 in manifest`,
+        `strict-sha256: skill "${skill.name}" file "${file.path}" has no sha256 in manifest. ` +
+          `Pass --no-strict-sha256 (or set FORGENT_STRICT_SHA256=0) to install anyway.`,
       );
     } else if (!warnedMissingHashFor.has(skill.name)) {
       warnedMissingHashFor.add(skill.name);
       console.error(
         `WARN: skill "${skill.name}" has files without sha256 in the manifest; ` +
-          `forgent cannot verify integrity. Pass --strict-sha256 to enforce.`,
+          `forgent cannot verify integrity. Re-enable strict mode by dropping --no-strict-sha256.`,
       );
     }
     await fs.mkdir(path.dirname(target), { recursive: true });
