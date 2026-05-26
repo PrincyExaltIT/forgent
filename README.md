@@ -8,7 +8,7 @@ and own the copy. Supports Claude Code, GitHub Copilot, OpenAI Codex CLI,
 and Cursor.
 
 ```bash
-npx forgent add --provider claude commit
+npx forgent add --provider claude angular-review
 ```
 
 ## The principle (same as shadcn/ui)
@@ -25,7 +25,7 @@ filename. The CLI then steps out — your copy is yours to edit.
 | ----------------------------------------------- | --------------------------------------------------------- |
 | `components.json` config in the project         | `forgent.config.json` in your cwd (optional)              |
 | Remote registry served over HTTPS               | Remote registry served over HTTPS                          |
-| `npx shadcn add button`                         | `npx forgent add --provider claude commit`                |
+| `npx shadcn add button`                         | `npx forgent add --provider claude angular-review`         |
 | Source copied into `src/components/ui`          | Source copied into your provider's skills/prompts/rules dir |
 | You own the file                                | Same — your copy is yours                                 |
 
@@ -34,14 +34,14 @@ filename. The CLI then steps out — your copy is yours to edit.
 No install needed — invoke with `npx`:
 
 ```bash
-npx forgent add --provider claude commit
+npx forgent add --provider claude angular-review
 ```
 
 Or install globally:
 
 ```bash
 npm install -g forgent
-forgent add --provider claude commit
+forgent add --provider claude angular-review
 ```
 
 Requires Node 18+ (uses the global `fetch`).
@@ -93,20 +93,20 @@ has no variant convention and always uses `SKILL.md`.
 # inspect what's available
 npx forgent providers
 npx forgent list
-npx forgent info commit
+npx forgent info angular-review
 
 # install for a specific provider
-npx forgent add --provider claude commit review
-npx forgent add --provider copilot commit
-npx forgent add --provider cursor commit
+npx forgent add --provider claude angular-review angular-review-kata-rendering-events
+npx forgent add --provider copilot angular-review
+npx forgent add --provider cursor angular-review
 
 # uninstall
-npx forgent remove --provider claude commit
+npx forgent remove --provider claude angular-review
 
 # persist a default provider for this directory
 npx forgent init --provider claude
 # subsequent calls don't need --provider
-npx forgent add commit
+npx forgent add angular-review
 ```
 
 ## Commands
@@ -147,11 +147,12 @@ declared skill file at `<base>/skills/<name>/<file>`.
   "name": "default",
   "items": [
     {
-      "name": "commit",
-      "description": "Stage and commit with a conventional-commit message.",
-      "tags": ["git"],
+      "name": "angular-review",
+      "description": "Multi-reviewer Angular code audit on the current branch or a specified diff.",
+      "tags": ["angular", "code-review"],
       "files": [
-        { "path": "SKILL.md", "type": "skill:main" }
+        { "path": "SKILL.md", "type": "skill:main" },
+        { "path": "ORCHESTRATION.md", "type": "skill:doc" }
       ]
     }
   ]
