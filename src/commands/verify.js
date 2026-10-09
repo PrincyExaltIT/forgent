@@ -63,7 +63,7 @@ export async function runVerify(ctx) {
 
   // --provider (one or a comma list) and --dest narrow the check to matching installs.
   const providerFilter = ctx.flags.provider
-    ? new Set(String(ctx.flags.provider).split(",").map((p) => p.trim()).filter(Boolean))
+    ? new Set(String(ctx.flags.provider).split(/[\s,]+/).map((p) => p.trim()).filter(Boolean))
     : null;
   const destFilter = ctx.flags.dest ? samePath(path.resolve(ctx.cwd, ctx.flags.dest)) : null;
 

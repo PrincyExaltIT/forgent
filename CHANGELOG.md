@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-09
+
+### Fixed
+- `--provider agents,claude` typed unquoted in PowerShell: PowerShell turns the
+  comma into an array and passes "agents claude", which forgent rejected as an
+  unknown provider. Spaces now separate providers too, on `add`, `remove`,
+  `init` and `verify`.
+
 ## [1.2.0] - 2026-10-09
 
 Read before you install, and keep skills up to date without losing your edits.

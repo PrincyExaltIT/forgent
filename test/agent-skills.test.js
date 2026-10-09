@@ -216,3 +216,16 @@ test("a forgent 1.0 lockfile (no installs) still verifies with --provider/--dest
     assert.match(r.stdout, /OK\s+old\/SKILL\.md/);
   });
 });
+
+test("a provider list separated by a space works (PowerShell passes agents,claude as \"agents claude\")", async () => {
+  await withTmp(async ({ registry, cwd, env }) => {
+    const { skillName } = await seedFolderSkill(registry);
+    const r = await runCLI(["add", "--provider", "agents claude", "--project", skillName], { cwd, env });
+    assert.equal(r.code, 0, r.stderr);
+    assert.ok(await pathExists(path.join(cwd, ".agents", "skills", skillName, "SKILL.md")));
+    assert.ok(await pathExists(path.join(cwd, ".claude", "skills", skillName, "SKILL.md")));
+    const v = await runCLI(["verify", "--provider", "agents claude"], { cwd, env });
+    assert.equal(v.code, 0, v.stdout);
+    assert.match(v.stdout, /2 install\(s\)/);
+  });
+});
