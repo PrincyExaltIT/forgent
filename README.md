@@ -109,7 +109,9 @@ not ship to npm.
 | `cursor` | — | `~/.cursor/rules/<name>.mdc` | single file *(legacy)* | Cursor rules |
 
 Pass several providers at once: `--provider agents,claude` fetches each skill
-once and copies it into both folders — between them, every harness above.
+once and copies it into both folders — between them, every harness above. A space
+works as a separator too (`--provider "agents claude"`), which also covers
+PowerShell, where an unquoted `agents,claude` reaches forgent as `agents claude`.
 
 ### Which provider?
 

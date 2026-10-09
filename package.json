@@ -1,6 +1,6 @@
 {
   "name": "forgent",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "shadcn-style installer for AI agent skills. Pick from a remote registry and copy the skill folder where your harness reads it: .agents/skills (Codex, GitHub Copilot, Cursor, Gemini CLI, OpenCode, Kilo Code…) or .claude/skills (Claude Code). You own the copy.",
   "type": "module",
   "bin": {

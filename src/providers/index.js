@@ -28,9 +28,10 @@ export function getProvider(name) {
 
 /**
  * Resolve a provider list: "agents,claude" (or an array) -> adapters, in order, without duplicates.
+ * Spaces separate too: PowerShell turns an unquoted agents,claude into the single argument "agents claude".
  */
 export function getProviders(names) {
-  const list = (Array.isArray(names) ? names : String(names ?? "").split(","))
+  const list = (Array.isArray(names) ? names : String(names ?? "").split(/[\s,]+/))
     .map((n) => n.trim())
     .filter(Boolean);
   if (list.length === 0) return [getProvider(null)];
