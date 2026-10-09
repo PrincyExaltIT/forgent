@@ -1,12 +1,13 @@
-import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { assertDirsFitProviders, resolveInstallDir, resolveProviderName } from "../config.js";
-import { findSkillVersioned, loadRegistry, materializeSkill } from "../registry.js";
+import { findSkillVersioned, loadRegistry, materializeSkill, skillFiles } from "../registry.js";
 import { getProviders } from "../providers/index.js";
 import { assertSemver } from "../registry-schema.js";
 import { encodeInstallPath, readLockfile, recordInstall, writeLockfile } from "../lockfile.js";
+import { hashInstalledFiles, listDirRecursive } from "../hash-tree.js";
+import { confirmScripts, scriptPaths } from "../skill-scripts.js";
 
 export function parseSkillRef(input) {
   const at = input.lastIndexOf("@");
@@ -17,37 +18,16 @@ export function parseSkillRef(input) {
   return { name, version };
 }
 
-async function sha256OfFile(filePath) {
-  const buf = await fs.readFile(filePath);
-  return createHash("sha256").update(buf).digest("hex");
-}
-
-async function listDirRecursive(dir) {
-  const out = [];
-  async function visit(d, rel) {
-    const entries = await fs.readdir(d, { withFileTypes: true });
-    for (const entry of entries) {
-      const next = path.join(d, entry.name);
-      const relNext = rel ? `${rel}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) await visit(next, relNext);
-      else if (entry.isFile()) out.push(relNext);
+/** Scripts of a fetched skill: from the staged files when they exist, from the manifest on --dry-run. */
+export async function stagedScripts(skill, stagingDir, dryRun) {
+  if (!dryRun) {
+    try {
+      return scriptPaths(await listDirRecursive(stagingDir));
+    } catch {
+      // fall back to the manifest
     }
   }
-  await visit(dir, "");
-  return out.sort();
-}
-
-async function hashInstalledFiles(writtenPath) {
-  const stat = await fs.stat(writtenPath);
-  if (stat.isDirectory()) {
-    const rels = await listDirRecursive(writtenPath);
-    const out = [];
-    for (const rel of rels) {
-      out.push({ path: rel, sha256: await sha256OfFile(path.join(writtenPath, rel)) });
-    }
-    return out;
-  }
-  return [{ path: path.basename(writtenPath), sha256: await sha256OfFile(writtenPath) }];
+  return scriptPaths(skillFiles(skill));
 }
 
 // Files a single-file provider can install: SKILL.md or its own pre-rendered variant.
@@ -94,6 +74,14 @@ export async function runAdd(ctx, names) {
         dryRun: ctx.flags.dryRun,
         strictSha256: ctx.flags.strictSha256,
       });
+      // Scripts only reach the machine through a folder provider; ask before that happens.
+      if (targets.some((t) => t.provider.layout === "folder")) {
+        const scripts = await stagedScripts(skill, stagingDir, ctx.flags.dryRun);
+        if (!(await confirmScripts(ctx, skill.name, scripts))) {
+          console.log(`skipped ${skill.name}: not installed`);
+          continue;
+        }
+      }
       for (const { provider, installDir } of targets) {
         const dropped = droppedBySingleFile(provider, skill);
         if (dropped.length > 0) {

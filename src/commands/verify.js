@@ -1,14 +1,9 @@
-import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveInstallDir } from "../config.js";
 import { getProvider } from "../providers/index.js";
 import { decodeInstallPath, readLockfile, lockfilePath } from "../lockfile.js";
-
-async function sha256OfFile(filePath) {
-  const buf = await fs.readFile(filePath);
-  return createHash("sha256").update(buf).digest("hex");
-}
+import { sha256OfFile } from "../hash-tree.js";
 
 // Paths compare case-insensitively on Windows.
 const samePath = (p) => (process.platform === "win32" ? path.normalize(p).toLowerCase() : path.normalize(p));
