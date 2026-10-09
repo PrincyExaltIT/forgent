@@ -78,7 +78,11 @@
             "skill:copilot",
             "skill:example",
             "skill:reference",
-            "skill:template"
+            "skill:template",
+            "skill:script",
+            "skill:asset",
+            "skill:config",
+            "skill:eval"
           ]
         },
         "sha256": {

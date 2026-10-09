@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-09
+
+Follow the Agent Skills standard: install the whole skill folder where today's
+harnesses look for it. Everything is additive — the 1.x CLI, manifest schema,
+lockfile shape and exit codes keep working unchanged.
+
+### Added
+- **`agents` provider**: the Agent Skills standard folder, `.agents/skills/<name>/`
+  in the project by default (`--user`: `~/.agents/skills`). Read by Codex,
+  GitHub Copilot, Cursor, Gemini CLI, OpenCode, Kilo Code and most Agent Skills
+  harnesses. The whole folder is copied: `SKILL.md`, `references/`, `scripts/`,
+  `assets/`…
+- **`--project` / `--user`** pick the install scope. `claude --project` installs
+  in `.claude/skills` (also read by Continue). `scope` can be persisted with
+  `forgent init`.
+- **Several providers at once**: `--provider agents,claude` fetches and checks
+  each skill once, then copies it into every provider's folder. Works for
+  `add`, `remove` and `init`, and as a filter on `verify`.
+- **Lockfile `installs`**: each skill entry lists every place it is installed
+  (provider, path, version, files). Paths are project-relative when inside the
+  project (`~/…` under home), so a committed lockfile works on every machine.
+  The top-level fields still describe the latest install, as in 1.0.
+- **`verify` checks every recorded install** without flags; `--provider` and
+  `--dest` narrow the check. It exits 1 when no install matches the filters.
+  1.0 lockfiles are verified exactly as before.
+- **File types** `skill:script`, `skill:asset`, `skill:config`, `skill:eval`
+  in the manifest schema (types stay optional).
+- A warning when a single-file provider (`copilot`, `codex`, `cursor`) would
+  drop part of a skill (scripts, references, assets).
+
+### Changed
+- `copilot`, `codex` and `cursor` are documented as **legacy single-file**
+  providers. They behave as in 1.0, refuse `--project` with a pointer to
+  `--provider agents`, and `doctor` warns about them. The README no longer
+  claims that Codex cannot load skills: it reads `.agents/skills`.
+- `--dest` (or an `installDir` from env/config) with several providers is
+  refused: one directory cannot hold several providers' copies.
+- `providers` lists `agents` first, with each provider's default scope.
+
+### Fixed
+- `forgent init` messages named `skills.config.json` instead of
+  `forgent.config.json`.
+
 ## [1.0.0] - 2026-05-26
 
 The 1.0 line. Stability promise applies from this release onward (see README

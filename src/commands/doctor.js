@@ -2,7 +2,7 @@ import os from "node:os";
 import fs from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import { resolveProviderName, resolveInstallDir } from "../config.js";
-import { getProvider } from "../providers/index.js";
+import { getProviders } from "../providers/index.js";
 import { loadRegistry } from "../registry.js";
 
 export async function runDoctor(ctx) {
@@ -25,18 +25,19 @@ export async function runDoctor(ctx) {
   }
 
   const providerName = await resolveProviderName(ctx);
-  let provider = null;
+  let providers = [];
   if (!providerName) {
     console.log(
       `WARN: no provider resolved (set --provider, FORGENT_PROVIDER, or run \`forgent init\`)`,
     );
   } else {
     try {
-      provider = getProvider(providerName);
-      console.log(`OK: provider ${providerName}`);
-      if (providerName === "codex") {
+      providers = getProviders(providerName);
+      console.log(`OK: provider ${providers.map((p) => p.name).join(", ")}`);
+      for (const p of providers.filter((a) => a.layout === "file")) {
         console.log(
-          `WARN: Codex CLI has no native skill format — installs use a generic .md fallback`,
+          `WARN: ${p.name} is a legacy single-file provider — skills that ship scripts or references lose them. ` +
+            `Prefer --provider agents (the Agent Skills folder, .agents/skills).`,
         );
       }
     } catch (err) {
@@ -45,14 +46,14 @@ export async function runDoctor(ctx) {
     }
   }
 
-  if (provider) {
+  for (const provider of providers) {
     try {
       const dir = await resolveInstallDir(ctx, provider);
       await fs.mkdir(dir, { recursive: true });
       await fs.access(dir, fsConstants.W_OK);
-      console.log(`OK: install dir ${dir}`);
+      console.log(`OK: install dir ${dir} (${provider.name})`);
     } catch (err) {
-      console.log(`FAIL: install dir — ${err.message}`);
+      console.log(`FAIL: install dir (${provider.name}) — ${err.message}`);
       fails++;
     }
   }

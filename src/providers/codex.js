@@ -6,7 +6,10 @@ import { assertSafeName } from "../path-safety.js";
 
 export const name = "codex";
 export const description =
-  "OpenAI Codex CLI: <installDir>/<name>.md (single file). NOTE: Codex has no native named-skill loader; files are placed for manual inclusion in AGENTS.md.";
+  "OpenAI Codex CLI (legacy single file): <installDir>/<name>.md, which Codex does not load by itself. Codex now reads skill folders from .agents/skills — prefer --provider agents.";
+export const layout = "file";
+export const scopes = Object.freeze(["user"]);
+export const defaultScope = "user";
 
 const EXT = ".md";
 const MAIN_SOURCE_FILE = "SKILL.md";

@@ -46,7 +46,7 @@ test("doctor: --provider claude shows OK on provider and install dir", async () 
   }
 });
 
-test("doctor: --provider codex emits the non-native warning", async () => {
+test("doctor: --provider codex warns that the single-file provider is legacy", async () => {
   const installDir = await mkTmp("forgent-doctor-codex-");
   try {
     const r = await run([
@@ -60,7 +60,8 @@ test("doctor: --provider codex emits the non-native warning", async () => {
     ]);
     assert.equal(r.code, 0, r.stderr || r.stdout);
     assert.match(r.stdout, /OK: provider codex/);
-    assert.match(r.stdout, /WARN: Codex CLI has no native skill format/);
+    assert.match(r.stdout, /WARN: codex is a legacy single-file provider/);
+    assert.match(r.stdout, /--provider agents/);
   } finally {
     await rmTmp(installDir);
   }

@@ -6,6 +6,11 @@ export const FILE_TYPES = Object.freeze([
   "skill:example",
   "skill:reference",
   "skill:template",
+  // 1.1: the rest of an Agent Skills folder.
+  "skill:script",
+  "skill:asset",
+  "skill:config",
+  "skill:eval",
 ]);
 
 export const SEMVER_RE =

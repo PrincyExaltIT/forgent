@@ -6,7 +6,8 @@ export async function runProviders() {
   console.log("available providers:");
   for (const a of adapters) {
     const name = a.name.padEnd(nameWidth, " ");
-    console.log(`  ${name}  default install: ${a.defaultInstallDir()}`);
+    const where = a.layout === "folder" ? `${a.defaultScope} scope` : "legacy single file";
+    console.log(`  ${name}  default install: ${a.defaultInstallDir({ cwd: process.cwd() })} (${where})`);
     console.log(`  ${" ".repeat(nameWidth)}  ${a.description}`);
   }
 }

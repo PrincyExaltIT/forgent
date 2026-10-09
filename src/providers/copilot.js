@@ -6,7 +6,10 @@ import { assertSafeName } from "../path-safety.js";
 
 export const name = "copilot";
 export const description =
-  "GitHub Copilot prompts: <installDir>/<name>.prompt.md (single file). Defaults to VS Code user prompts dir.";
+  "GitHub Copilot prompt (legacy single file): <installDir>/<name>.prompt.md in the VS Code user prompts dir. Copilot now reads skill folders (.agents/skills, .github/skills) — prefer --provider agents.";
+export const layout = "file";
+export const scopes = Object.freeze(["user"]);
+export const defaultScope = "user";
 
 const EXT = ".prompt.md";
 const MAIN_SOURCE_FILE = "SKILL.md";

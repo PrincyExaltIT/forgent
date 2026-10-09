@@ -1,49 +1,29 @@
-import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { copyDir, exists } from "../fs-helpers.js";
-import { assertSafeName } from "../path-safety.js";
+import { folderTargetPath, installFolder, removeFolder } from "./_folder.js";
 
 export const name = "claude";
 export const description =
-  "Claude Code skills: <installDir>/<name>/SKILL.md (one folder per skill, full source dir copied)";
+  "Claude Code skills: <installDir>/<name>/ (whole skill folder). User (default): ~/.claude/skills; " +
+  "--project: .claude/skills, also read by Continue.";
+export const layout = "folder";
+export const scopes = Object.freeze(["user", "project"]);
+export const defaultScope = "user";
 
-export function defaultInstallDir() {
-  return path.join(os.homedir(), ".claude", "skills");
+export function defaultInstallDir({ scope = defaultScope, cwd = process.cwd() } = {}) {
+  return scope === "project"
+    ? path.join(cwd, ".claude", "skills")
+    : path.join(os.homedir(), ".claude", "skills");
 }
 
 export function targetPath(installDir, skillName) {
-  assertSafeName(skillName, "skillName");
-  return path.join(installDir, skillName);
+  return folderTargetPath(installDir, skillName);
 }
 
-export async function install({ installDir, skillName, sourceDir, force, dryRun }) {
-  assertSafeName(skillName, "skillName");
-  const target = path.join(installDir, skillName);
-  if (await exists(target)) {
-    if (!force) {
-      throw new Error(
-        `claude: skill "${skillName}" already exists at ${target}. ` +
-          `Pass --force to overwrite, or run: forgent remove --provider claude ${skillName}`,
-      );
-    }
-    if (dryRun) console.log(`[dry-run] would remove existing ${target}`);
-    else await fs.rm(target, { recursive: true, force: true });
-  }
-  await copyDir(sourceDir, target, dryRun);
-  return { writtenPath: target };
+export async function install(args) {
+  return installFolder(name, args);
 }
 
-export async function remove({ installDir, skillName, dryRun }) {
-  assertSafeName(skillName, "skillName");
-  const target = path.join(installDir, skillName);
-  if (!(await exists(target))) {
-    throw new Error(`claude: no installed skill at ${target}`);
-  }
-  if (dryRun) {
-    console.log(`[dry-run] would remove ${target}`);
-    return { removedPath: target };
-  }
-  await fs.rm(target, { recursive: true, force: true });
-  return { removedPath: target };
+export async function remove(args) {
+  return removeFolder(name, args);
 }
