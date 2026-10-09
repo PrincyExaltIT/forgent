@@ -6,7 +6,10 @@ import { assertSafeName } from "../path-safety.js";
 
 export const name = "cursor";
 export const description =
-  "Cursor rules: <installDir>/<name>.mdc (single file). Defaults to ~/.cursor/rules; for project rules, pass --dest .cursor/rules.";
+  "Cursor rule (legacy single file): <installDir>/<name>.mdc. Defaults to ~/.cursor/rules; for project rules, pass --dest .cursor/rules. Cursor also reads skill folders from .agents/skills — prefer --provider agents.";
+export const layout = "file";
+export const scopes = Object.freeze(["user"]);
+export const defaultScope = "user";
 
 const EXT = ".mdc";
 const MAIN_SOURCE_FILE = "SKILL.md";

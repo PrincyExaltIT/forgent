@@ -20,18 +20,20 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(HERE, "..");
 
 const HELP = `forgent — shadcn-style installer for AI agent skills
-              (Claude Code, GitHub Copilot, OpenAI Codex CLI, Cursor)
+              (any Agent Skills harness: Codex, GitHub Copilot, Cursor, Gemini CLI,
+               OpenCode, Kilo Code, Claude Code, and many others)
 
 Usage:
   forgent providers                          List supported providers
   forgent list                               List skills in the registry
   forgent info <name>                        Show one skill's metadata + files
   forgent add --provider <p> <name>[@v]...   Copy skills into <p>'s install dir
+                                             e.g. --provider agents,claude --project
   forgent remove --provider <p> <name>       Delete an installed skill
   forgent init [--provider <p>] [--dest <d>] Persist defaults in forgent.config.json
   forgent registry <verb> [args]             Manage named registries (see below)
   forgent validate-registry                  Validate the registry manifest
-  forgent verify                             Re-hash installed files vs forgent.lock.json
+  forgent verify                             Re-hash every install recorded in forgent.lock.json
   forgent hash-files [--registry <path>]     Diff manifest sha256 vs computed (local registry)
   forgent validate-skill <name>              Validate a skill's JSON examples against their $schema
   forgent doctor                             Diagnose the local install + registry
@@ -52,16 +54,26 @@ Registries:
     4. built-in default URL
 
 Flags:
-  --provider <name>     Target provider: claude | copilot | codex | cursor.
-                        Required for add/remove/verify unless persisted via
-                        forgent.config.json or FORGENT_PROVIDER env var.
+  --provider <names>    Target provider(s), comma-separated:
+                          agents   the Agent Skills folder (.agents/skills), read by
+                                   Codex, Copilot, Cursor, Gemini CLI, OpenCode, Kilo Code…
+                          claude   Claude Code's folder (.claude/skills), also Continue
+                          copilot | codex | cursor   legacy single file (drops scripts)
+                        "agents,claude" covers every harness. Required for add/remove
+                        unless persisted via forgent.config.json or FORGENT_PROVIDER.
+                        On verify, narrows the check to those providers.
+  --project             Install inside the project (commit it for the team):
+                        agents -> .agents/skills (its default), claude -> .claude/skills.
+  --user                Install in your home directory: claude -> ~/.claude/skills
+                        (its default), agents -> ~/.agents/skills.
   --registry <url|path> Override the registry source. Accepts a configured
                         registry name, an HTTPS URL, or a local filesystem
                         path. Default: forgent.config.json defaultRegistry,
                         or the bundled community registry hosted on GitHub.
-  --dest <path>         Override the install directory.
-                        Default: provider's own default location, or value
-                        from FORGENT_INSTALL_DIR / forgent.config.json.
+  --dest <path>         Override the install directory (one provider at a time).
+                        Default: FORGENT_INSTALL_DIR / forgent.config.json, else
+                        the provider's folder for the chosen scope.
+                        On verify, narrows the check to installs in that directory.
   --force               Overwrite an existing skill on add, or an existing
                         registry entry on \`registry add\`.
   --default             On \`registry add\`, also mark the new entry default.
@@ -82,6 +94,8 @@ Versioning:
 Principle (same as shadcn/ui):
   Skills are not "installed" as dependencies. \`add\` copies the source files
   into your provider's install dir. You own the copy and can edit it freely.
+  forgent.lock.json records each install (where, which version, sha256 of every
+  file): commit it with a project install, and run \`forgent verify\` in CI.
 `;
 
 function parseArgs(argv) {
@@ -96,6 +110,8 @@ function parseArgs(argv) {
     // strict is the default). false = explicit opt-out via --no-strict-sha256.
     strictSha256: null,
     makeDefault: false,
+    // "project" | "user" | null (each provider has its own default).
+    scope: null,
   };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
@@ -103,6 +119,8 @@ function parseArgs(argv) {
     if (a === "--provider") flags.provider = argv[++i];
     else if (a === "--registry") flags.registry = argv[++i];
     else if (a === "--dest") flags.dest = argv[++i];
+    else if (a === "--project") flags.scope = "project";
+    else if (a === "--user") flags.scope = "user";
     else if (a === "--force") flags.force = true;
     else if (a === "--default") flags.makeDefault = true;
     else if (a === "--dry-run") flags.dryRun = true;

@@ -3,12 +3,14 @@
 > Forge your agent's skills.
 
 A shadcn/ui-style installer for **AI agent skills**. Pick a skill from a
-remote registry, copy the source into your agent's local skills directory,
-and own the copy. Supports Claude Code, GitHub Copilot, OpenAI Codex CLI,
-and Cursor.
+remote registry, copy the source into your agent's skills folder, and own the
+copy. Works with any harness that reads the [Agent Skills](https://agentskills.io)
+standard — Codex, GitHub Copilot, Cursor, Gemini CLI, OpenCode, Kilo Code,
+Claude Code, and many others, including your team's own tools.
 
 ```bash
-npx forgent add --provider claude angular-review
+# in your project: one folder for most harnesses, one for Claude Code
+npx forgent add --provider agents,claude --project angular-review
 ```
 
 ## The principle (same as shadcn/ui)
@@ -34,14 +36,14 @@ filename. The CLI then steps out — your copy is yours to edit.
 No install needed — invoke with `npx`:
 
 ```bash
-npx forgent add --provider claude angular-review
+npx forgent add --provider agents,claude --project angular-review
 ```
 
 Or install globally:
 
 ```bash
 npm install -g forgent
-forgent add --provider claude angular-review
+forgent add --provider agents angular-review
 ```
 
 Requires Node 18+ (uses the global `fetch`).
@@ -50,31 +52,37 @@ Requires Node 18+ (uses the global `fetch`).
 
 ```console
 $ npx forgent list
-angular-review                        Multi-reviewer Angular code audit (security, architecture, performance, a11y/errors, optional project-compliance) on the current branch or a specified diff, with optional empirical DOM validation via the Playwright MCP server.
-angular-review-kata-rendering-events  Variant of angular-review pre-wired for the R-KATA Rendering Events brief: embeds R-KATA-001..013 rules (positioning time-to-pixels, overlap, responsiveness). Otherwise identical to angular-review.
+angular-review                        Senior-level review of Angular changes — a branch, a PR/MR, staged files or a commit range …
+angular-review-kata-rendering-events  Variant of angular-review pre-wired for the R-KATA Rendering Events brief …
 
-$ npx forgent add --provider claude angular-review
-added angular-review (claude) -> ~/.claude/skills/angular-review
+$ npx forgent add --provider agents,claude --project angular-review
+added angular-review (agents) -> ./.agents/skills/angular-review
+added angular-review (claude) -> ./.claude/skills/angular-review
 
 $ cat forgent.lock.json
 {
   "lockfileVersion": 1,
   "skills": {
     "angular-review": {
-      "registry": { "name": "agent-skill", "version": "0.3.1", "source": "https://raw.../main" },
-      "skillVersion": "0.1.2",
+      "registry": { "name": "agent-skill", "version": "0.5.0", "source": "https://raw.../main" },
+      "skillVersion": "2.1.0",
       "provider": "claude",
-      "installedAt": "2026-05-26T10:46:33.021Z",
-      "files": [{ "path": "SKILL.md", "sha256": "d095f575..." }, ...]
+      "installedAt": "2026-10-09T14:02:11.000Z",
+      "files": [{ "path": "SKILL.md", "sha256": "…" }, …],
+      "installs": [
+        { "provider": "agents", "path": ".agents/skills/angular-review", "skillVersion": "2.1.0", "files": […] },
+        { "provider": "claude", "path": ".claude/skills/angular-review", "skillVersion": "2.1.0", "files": […] }
+      ]
     }
   }
 }
 
-$ npx forgent verify --provider claude
+$ npx forgent verify
+--   angular-review (agents) .agents/skills/angular-review
 OK   angular-review/SKILL.md
-OK   angular-review/ORCHESTRATION.md
-...
-verified 1 skill(s)
+OK   angular-review/scripts/scan.mjs
+…
+verified 1 skill(s), 2 install(s)
 ```
 
 A scripted version of this tour lives in [`demo/`](./demo/) — `demo/demo-script.sh`
@@ -84,34 +92,46 @@ not ship to npm.
 
 ## Supported providers
 
-| Provider   | Default install dir (per OS)                                           | File layout                          |
-| ---------- | ---------------------------------------------------------------------- | ------------------------------------ |
-| `claude`   | `~/.claude/skills/<name>/SKILL.md`                                     | folder per skill, whole source copied |
-| `copilot`  | `<VS Code user dir>/prompts/<name>.prompt.md`                          | single file, source `SKILL.md` renamed |
-| `codex`    | `~/.codex/skills/<name>.md` *(see caveat below)*                       | single file                           |
-| `cursor`   | `~/.cursor/rules/<name>.mdc`                                           | single file                           |
+| Provider | Project (`--project`) | User (`--user`) | Layout | Read by |
+| -------- | --------------------- | --------------- | ------ | ------- |
+| `agents` | `.agents/skills/<name>/` **(default)** | `~/.agents/skills/<name>/` | whole skill folder | Codex, GitHub Copilot, Cursor, Gemini CLI, OpenCode, Kilo Code and most Agent Skills harnesses (user level: Codex; check yours) |
+| `claude` | `.claude/skills/<name>/` | `~/.claude/skills/<name>/` **(default)** | whole skill folder | Claude Code, Continue |
+| `copilot` | — | `<VS Code user dir>/prompts/<name>.prompt.md` | single file *(legacy)* | Copilot prompt files |
+| `codex` | — | `~/.codex/skills/<name>.md` | single file *(legacy)* | not loaded by Codex on its own |
+| `cursor` | — | `~/.cursor/rules/<name>.mdc` | single file *(legacy)* | Cursor rules |
+
+Pass several providers at once: `--provider agents,claude` fetches each skill
+once and copies it into both folders — between them, every harness above.
+
+### Which provider?
+
+- **For a team**: `--provider agents,claude --project`, then commit the two
+  folders and `forgent.lock.json`. Everyone gets the skill, whatever their tool.
+- **For yourself**: `--provider claude` (Claude Code) or `--provider agents --user`.
+- **Your tool is not listed?** If its docs talk about Agent Skills or
+  `SKILL.md`, it reads a skills folder — usually `.agents/skills`: use
+  `--provider agents`, or `--dest <its folder>`. If it does not know skills,
+  point its instructions file (`AGENTS.md` or equivalent) at the installed
+  `SKILL.md`.
+- **The single-file providers** (`copilot`, `codex`, `cursor`) predate the
+  standard and are kept for 1.x compatibility. They copy `SKILL.md` (or a
+  pre-rendered variant) only: a skill that ships scripts, references or assets
+  loses them, and forgent warns when that happens. Codex, Copilot and Cursor
+  now read skill folders: prefer `--provider agents`.
 
 `copilot` install dir per OS:
 - **Windows**: `%APPDATA%\Code\User\prompts`
 - **macOS**: `~/Library/Application Support/Code/User/prompts`
 - **Linux**: `~/.config/Code/User/prompts`
 
-### Caveat: Codex
-
-OpenAI Codex CLI does not have a native **named-skill loader** the way Claude
-does. The `codex` provider writes files to `~/.codex/skills/<name>.md` as a
-convention so they live in a predictable place — Codex will not auto-load them.
-You include them by referencing the file from your `AGENTS.md`. If you want
-auto-included global rules instead, paste the content into `~/.codex/AGENTS.md`
-yourself; this CLI deliberately does not mutate that shared file.
-
 ### Caveat: frontmatter
 
-Each provider expects slightly different frontmatter on its skill/prompt/rule
-file. The registry ships skills with Claude-style frontmatter (`name`,
-`description`, `user_invocable`). After `add`, you may need to adjust
-frontmatter for Copilot (`mode`, `tools`), Codex (none required), or Cursor
-(`globs`, `alwaysApply`). Since you own the copy, edit it freely.
+Folder providers install the skill as published: harnesses that read the
+Agent Skills standard all understand its frontmatter (`name`, `description`,
+plus optional fields they ignore when unknown). For the legacy single-file
+providers you may need to adjust frontmatter after `add`: Copilot prompts
+(`mode`, `tools`), Cursor rules (`globs`, `alwaysApply`). Since you own the
+copy, edit it freely.
 
 ### Pre-rendered provider variants
 
@@ -119,9 +139,9 @@ If a skill's source folder ships a `<name>.prompt.md` (Copilot) or
 `<name>.codex.md` (Codex) alongside `SKILL.md`, forgent installs that variant
 instead of `SKILL.md` for the matching provider. Use this when you want to
 ship hand-tuned content per provider — frontmatter, prompt style, tool list —
-without asking users to edit after install. The `claude` provider copies the
-whole skill folder, so it always has access to every file. `cursor` currently
-has no variant convention and always uses `SKILL.md`.
+without asking users to edit after install. The folder providers (`agents`,
+`claude`) copy the whole skill folder, so they always have every file. `cursor`
+currently has no variant convention and always uses `SKILL.md`.
 
 ## Usage
 
@@ -131,22 +151,26 @@ npx forgent providers
 npx forgent list
 npx forgent info angular-review
 
-# install for a specific provider
-npx forgent add --provider claude angular-review angular-review-kata-rendering-events
-npx forgent add --provider copilot angular-review
+# a team install: committed in the project, read by every harness
+npx forgent add --provider agents,claude --project angular-review
+
+# a personal install
+npx forgent add --provider claude angular-review          # ~/.claude/skills
+npx forgent add --provider agents --user angular-review   # ~/.agents/skills
 
 # pin to an exact version (registry must declare items[].version)
-npx forgent add --provider claude angular-review@0.1.0
+npx forgent add --provider agents angular-review@2.1.0
 
-# verify installed files match the lockfile (no network)
-npx forgent verify --provider claude
+# verify every recorded install still matches the lockfile (no network)
+npx forgent verify
+npx forgent verify --provider agents      # only the agents installs
 
-# uninstall
-npx forgent remove --provider claude angular-review
+# uninstall one install (the other stays in the lockfile)
+npx forgent remove --provider claude --project angular-review
 
-# persist a default provider for this directory
-npx forgent init --provider claude
-# subsequent calls don't need --provider
+# persist defaults for this directory
+npx forgent init --provider agents,claude --project
+# subsequent calls don't need the flags
 npx forgent add angular-review
 ```
 
@@ -174,7 +198,11 @@ registries that have not adopted sha256 yet.
 this when you want the same skill version across machines or CI runs.
 
 Each successful `add` records what was installed in `forgent.lock.json`
-next to `forgent.config.json`. Shape:
+next to `forgent.config.json`. Since 1.1, each skill also lists its
+`installs` — one per location, with the path relative to the project when it
+is inside it (`~/…` under your home), so a committed lockfile works on every
+machine. The top-level fields still describe the latest install, as in 1.0.
+Shape:
 
 ```json
 {
@@ -185,7 +213,10 @@ next to `forgent.config.json`. Shape:
       "skillVersion": "0.1.0",
       "provider": "claude",
       "installedAt": "2026-05-26T14:32:11.000Z",
-      "files": [{ "path": "SKILL.md", "sha256": "..." }]
+      "files": [{ "path": "SKILL.md", "sha256": "..." }],
+      "installs": [
+        { "provider": "agents", "path": ".agents/skills/angular-review", "skillVersion": "0.1.0", "installedAt": "…", "files": [ … ] }
+      ]
     }
   }
 }
@@ -193,10 +224,19 @@ next to `forgent.config.json`. Shape:
 
 Commit the lockfile to your repo and run `forgent verify` in CI to confirm
 nobody (and nothing) has touched the installed skill files since `add`.
-`verify` re-hashes each installed file against the lockfile and exits 1 on
-any mismatch — no network, purely local.
+`verify` re-hashes every recorded install against the lockfile and exits 1 on
+any mismatch — no network, purely local. `--provider` and `--dest` narrow the
+check; a 1.0 lockfile (no `installs`) is checked at the location the flags,
+`FORGENT_INSTALL_DIR` or `forgent.config.json` give, as before.
 
-`forgent remove` deletes the matching entry. `--dry-run` skips the write.
+```yaml
+# .github/workflows/skills.yml — fail the PR when an installed skill drifts
+- uses: actions/checkout@v4
+- run: npx --yes forgent@1 verify
+```
+
+`forgent remove` drops that install from the lockfile, and the whole entry
+once no install is left. `--dry-run` skips the write.
 
 > **fs-mode caveat:** when `--registry` is a local path, the install is a
 > whole-directory copy and per-file fetch verification is skipped. The
@@ -204,24 +244,25 @@ any mismatch — no network, purely local.
 
 ## Commands
 
-- `forgent providers` — list supported providers and their default install dirs.
+- `forgent providers` — list supported providers, their default install dir and scope.
 - `forgent list` — list every skill in the registry with its description.
 - `forgent info <name>` — show one skill's metadata and the files that would be copied.
-- `forgent add --provider <p> <name>[@<version>]...` — copy one or more skills into provider `<p>`'s install dir. Refuses to overwrite unless `--force`. Pinning to `@<version>` requires the registry to declare `items[].version`.
-- `forgent remove --provider <p> <name>` — delete an installed skill from provider `<p>`'s install dir.
-- `forgent init [--provider <p>] [--dest <d>]` — persist defaults in `forgent.config.json` so future commands don't need the flag.
+- `forgent add --provider <p>[,<p>…] <name>[@<version>]...` — copy one or more skills into each provider's install dir (`--project` / `--user` pick the scope). Refuses to overwrite unless `--force`. Pinning to `@<version>` requires the registry to declare `items[].version`. Warns when a single-file provider would drop part of a skill.
+- `forgent remove --provider <p>[,<p>…] <name>` — delete an installed skill from each provider's install dir, and drop those installs from the lockfile.
+- `forgent init [--provider <p>[,<p>…]] [--project|--user] [--dest <d>]` — persist defaults in `forgent.config.json` so future commands don't need the flags.
 - `forgent registry list | add <name> <url> [--default] [--force] | remove <name> | set-default <name>` — manage named registries persisted in `forgent.config.json`. See [Multi-registry](#multi-registry).
 - `forgent validate-registry` — load and validate the registry manifest (fail-fast for CI). Honors `--registry`.
-- `forgent verify` — re-hash installed files against `forgent.lock.json` and report any drift. Exits 1 on FAIL. No network.
+- `forgent verify [--provider <p>[,<p>…]] [--dest <d>]` — re-hash every install recorded in `forgent.lock.json` and report any drift. Exits 1 on FAIL, or when no install matches the filters. No network.
 - `forgent hash-files [--registry <path>]` — walk a local registry, compare each manifest `sha256` against the on-disk file, and exit 1 on any MISMATCH or MISSING entry. Local-only utility for registry authors keeping `sha256` fields in sync. HTTP registries are rejected.
 - `forgent validate-skill <name>` — read each `skill:example` `.json` file declared by the skill, fetch its `$schema` (when present), and validate. Hand-rolled minimal validator covers `type`, `required`, `properties`, `additionalProperties:false`, `enum`, `pattern`, `minLength`, `minimum`, `items`, and local `$ref` (`#/$defs/...`). Unknown keywords emit one `WARN` and are skipped. Examples without `$schema` are skipped (info, not failure).
-- `forgent doctor` — diagnose the local install: Node version, OS/arch, provider, install dir writability, registry reachability.
+- `forgent doctor` — diagnose the local install: Node version, OS/arch, provider(s), install dir writability, registry reachability; warns about legacy single-file providers.
 
 ## Flags
 
-- `--provider <name>` — required for `add` / `remove` unless persisted via `forgent.config.json` or the `FORGENT_PROVIDER` env var.
+- `--provider <names>` — one provider or a comma list (`agents,claude`). Required for `add` / `remove` unless persisted via `forgent.config.json` or the `FORGENT_PROVIDER` env var. On `verify`, narrows the check.
+- `--project` / `--user` — install inside the project (`agents` default) or in your home directory (`claude` default). The single-file providers only support `--user`.
 - `--registry <url|path>` — override the registry source. Accepts an HTTPS URL (e.g. your own GitHub raw URL) or a local filesystem path. Default: the bundled community registry hosted on GitHub.
-- `--dest <path>` — override the install directory (otherwise: provider default, or `FORGENT_INSTALL_DIR`, or `forgent.config.json`).
+- `--dest <path>` — override the install directory, one provider at a time (otherwise: `FORGENT_INSTALL_DIR`, `forgent.config.json`, then the provider's folder for the scope). On `verify`, narrows the check to installs in that directory.
 - `--force` — overwrite an existing install on `add`.
 - `--dry-run` — print what would happen, write nothing.
 - `--strict-sha256` — (default since 1.0) refuse to install any file whose manifest entry omits a sha256. Same as `FORGENT_STRICT_SHA256=1`. Kept as an explicit no-op for scripts that want to pin the behaviour.
@@ -230,7 +271,7 @@ any mismatch — no network, purely local.
 ## Resolution order
 
 For provider: `--provider` flag → `FORGENT_PROVIDER` env → `forgent.config.json` → error.
-For install dir: `--dest` flag → `FORGENT_INSTALL_DIR` env → `forgent.config.json` → provider's default.
+For install dir: `--dest` flag → `FORGENT_INSTALL_DIR` env → `forgent.config.json` `installDir` → the provider's folder for the scope (`--project` / `--user` → `forgent.config.json` `scope` → the provider's default scope).
 For registry: `--registry` flag (configured name or raw URL/path) → `FORGENT_REGISTRY` env (same) → `forgent.config.json` `defaultRegistry` (by name) → built-in default URL. See [Multi-registry](#multi-registry).
 
 ## The registry
@@ -262,9 +303,11 @@ declared skill file at `<base>/skills/<name>/<file>`.
 ```
 
 Top-level `name` and `version` (semver) are required. Paths in `files[].path`
-are relative to `<base>/skills/<item.name>/`. `files[].type` is a closed enum
-(`skill:main`, `skill:doc`, `skill:codex`, `skill:copilot`, `skill:example`,
-`skill:reference`, `skill:template`). The full JSON Schema is at
+are relative to `<base>/skills/<item.name>/`. `files[].type` is optional and,
+when present, one of `skill:main`, `skill:doc`, `skill:codex`, `skill:copilot`,
+`skill:example`, `skill:reference`, `skill:template`, and since 1.1
+`skill:script`, `skill:asset`, `skill:config`, `skill:eval` — the rest of an
+Agent Skills folder. The full JSON Schema is at
 [`schema/registry.schema.json`](./schema/registry.schema.json) — point your
 editor at it for autocomplete and validation. The shape is intentionally close
 to [shadcn/ui's registry schema](https://github.com/shadcn-ui/registry-template)

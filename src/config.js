@@ -56,6 +56,28 @@ export async function resolveProviderName(ctx) {
   return null;
 }
 
+/**
+ * Scope of an install: "project" (inside the repo, committed for the team) or
+ * "user" (in the home directory). --project / --user win over the config's
+ * `scope`; otherwise each provider has its own default (agents: project,
+ * claude and the legacy single-file providers: user).
+ */
+export async function resolveScope(ctx, provider) {
+  let scope = ctx.flags.scope ?? null;
+  if (!scope) {
+    const { data } = await loadConfig(ctx.cwd);
+    if (data && (data.scope === "project" || data.scope === "user")) scope = data.scope;
+  }
+  scope = scope ?? provider.defaultScope ?? "user";
+  if (Array.isArray(provider.scopes) && !provider.scopes.includes(scope)) {
+    throw new Error(
+      `${provider.name}: --${scope} is not supported by this legacy single-file provider. ` +
+        `Use --provider agents to install the skill folder in the project (.agents/skills), or --dest <dir>.`,
+    );
+  }
+  return scope;
+}
+
 export async function resolveInstallDir(ctx, provider) {
   if (ctx.flags.dest) return path.resolve(ctx.cwd, ctx.flags.dest);
   if (process.env.FORGENT_INSTALL_DIR) {
@@ -65,5 +87,29 @@ export async function resolveInstallDir(ctx, provider) {
   if (data && typeof data.installDir === "string") {
     return path.resolve(ctx.cwd, data.installDir);
   }
-  return provider.defaultInstallDir();
+  const scope = await resolveScope(ctx, provider);
+  return provider.defaultInstallDir({ scope, cwd: ctx.cwd });
+}
+
+/**
+ * Several providers at once ("agents,claude") need one directory each: an
+ * explicit directory (--dest, FORGENT_INSTALL_DIR, config installDir) would put
+ * them all in the same place, so it only works with a single provider.
+ */
+export async function assertDirsFitProviders(ctx, providers) {
+  if (providers.length < 2) return;
+  const { data } = await loadConfig(ctx.cwd);
+  const explicit = ctx.flags.dest
+    ? "--dest"
+    : process.env.FORGENT_INSTALL_DIR
+      ? "FORGENT_INSTALL_DIR"
+      : data && typeof data.installDir === "string"
+        ? "forgent.config.json installDir"
+        : null;
+  if (explicit) {
+    throw new Error(
+      `${explicit} sets one directory, but ${providers.length} providers were given (${providers.map((p) => p.name).join(", ")}). ` +
+        `Use --project or --user to let each provider pick its own folder, or pass a single --provider.`,
+    );
+  }
 }
