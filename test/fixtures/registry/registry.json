@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/PrincyExaltIT/forgent/main/schema/registry.schema.json",
+  "$schema": "https://raw.githubusercontent.com/PrincyExaltIT/forgent/master/schema/registry.schema.json",
   "name": "default",
   "version": "0.0.0",
   "homepage": "https://github.com/PrincyExaltIT/agent-skill",

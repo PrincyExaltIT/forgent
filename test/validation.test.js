@@ -40,7 +40,7 @@ test("validation: valid manifest with all fields passes", async () => {
   await withSeededRegistry(
     {
       $schema:
-        "https://raw.githubusercontent.com/PrincyExaltIT/forgent/main/schema/registry.schema.json",
+        "https://raw.githubusercontent.com/PrincyExaltIT/forgent/master/schema/registry.schema.json",
       name: "valid",
       version: "1.2.3",
       homepage: "https://example.com",

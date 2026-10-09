@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/PrincyExaltIT/forgent/main/schema/registry.schema.json",
+  "$id": "https://raw.githubusercontent.com/PrincyExaltIT/forgent/master/schema/registry.schema.json",
   "title": "forgent registry manifest",
   "description": "Manifest describing a registry of AI agent skills installable via the forgent CLI.",
   "type": "object",

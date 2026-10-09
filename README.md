@@ -285,7 +285,7 @@ declared skill file at `<base>/skills/<name>/<file>`.
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/PrincyExaltIT/forgent/main/schema/registry.schema.json",
+  "$schema": "https://raw.githubusercontent.com/PrincyExaltIT/forgent/master/schema/registry.schema.json",
   "name": "default",
   "version": "0.1.0",
   "items": [
