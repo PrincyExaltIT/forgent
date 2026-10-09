@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-09
+
+Read before you install, and keep skills up to date without losing your edits.
+Additive: the 1.x CLI, manifest schema, lockfile shape and exit codes keep working.
+
+### Added
+- **`forgent show <name>[@v] [--all]`**: fetch a skill into a temporary folder
+  (sha256 checked), print `SKILL.md` and its files with scripts flagged; `--all`
+  prints every file. Nothing is installed.
+- **Scripts notice on `add`**: forgent lists the scripts a skill ships. In a
+  terminal it asks `[y/N]` before installing; `--yes` / `-y` skips the question;
+  without a terminal (CI, pipes) it only prints the notice, as in 1.1.
+- **`forgent outdated`**: compares `forgent.lock.json` with the registry —
+  `outdated`, `changed` (same version, other published files), `up to date`,
+  `not in registry`. Exits 1 when something is behind.
+- **`forgent update [<name>...]`**: updates every recorded install, shows the
+  files added, changed and removed, and leaves an install with local edits alone
+  unless `--force`. `--dry-run` prints the plan.
+
+### Changed
+- Hashing of installed files is shared by add, verify, outdated and update
+  (`src/hash-tree.js`).
+
 ## [1.1.0] - 2026-10-09
 
 Follow the Agent Skills standard: install the whole skill folder where today's

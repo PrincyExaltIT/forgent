@@ -52,8 +52,16 @@ Requires Node 18+ (uses the global `fetch`).
 
 ```console
 $ npx forgent list
-angular-review                        Senior-level review of Angular changes — a branch, a PR/MR, staged files or a commit range …
-angular-review-kata-rendering-events  Variant of angular-review pre-wired for the R-KATA Rendering Events brief …
+angular-review   Senior-level review of Angular changes — a branch, a PR/MR, staged files or a commit range …
+review-fix       Applies the findings of a review one at a time, build and tests after each …
+pr-handoff       Writes the PR/MR description and a hand-off note …
+skill-smith      Creates and validates Agent Skills …
+
+$ npx forgent show angular-review
+name        angular-review@2.1.0
+files       21, of which 7 script(s) your agent can run
+  ! scripts/scan.mjs   …  script
+…
 
 $ npx forgent add --provider agents,claude --project angular-review
 added angular-review (agents) -> ./.agents/skills/angular-review
@@ -146,10 +154,12 @@ currently has no variant convention and always uses `SKILL.md`.
 ## Usage
 
 ```bash
-# inspect what's available
+# inspect what's available — and read a skill before you install it
 npx forgent providers
 npx forgent list
 npx forgent info angular-review
+npx forgent show angular-review          # SKILL.md + file list, scripts flagged
+npx forgent show angular-review --all    # every file, scripts included
 
 # a team install: committed in the project, read by every harness
 npx forgent add --provider agents,claude --project angular-review
@@ -165,6 +175,11 @@ npx forgent add --provider agents angular-review@2.1.0
 npx forgent verify
 npx forgent verify --provider agents      # only the agents installs
 
+# what is behind the registry, and update it (local edits need --force)
+npx forgent outdated
+npx forgent update --dry-run
+npx forgent update
+
 # uninstall one install (the other stays in the lockfile)
 npx forgent remove --provider claude --project angular-review
 
@@ -173,6 +188,20 @@ npx forgent init --provider agents,claude --project
 # subsequent calls don't need the flags
 npx forgent add angular-review
 ```
+
+## Read before you install
+
+A skill is code your agent runs with your rights: its `scripts/` run on your
+machine, its instructions steer your agent. forgent helps you look first:
+
+- `forgent show <name>` fetches the skill (with the usual sha256 checks) into a
+  temporary folder, prints `SKILL.md` and the file list with scripts flagged —
+  `--all` prints every file. Nothing is installed.
+- `forgent add` lists the scripts a skill ships and asks before installing it in
+  a terminal (`[y/N]`). `--yes` skips the question. Without a terminal (CI,
+  pipes) forgent prints the notice and goes on, as in 1.1.
+- `forgent update` never overwrites a copy you edited: an install whose files
+  differ from the lockfile is left alone unless `--force`.
 
 ## Integrity & lockfile
 
@@ -247,6 +276,9 @@ once no install is left. `--dry-run` skips the write.
 - `forgent providers` — list supported providers, their default install dir and scope.
 - `forgent list` — list every skill in the registry with its description.
 - `forgent info <name>` — show one skill's metadata and the files that would be copied.
+- `forgent show <name>[@<version>] [--all]` — fetch a skill into a temporary folder (sha256 checked) and print `SKILL.md` and its files, scripts flagged; `--all` prints every file. Installs nothing.
+- `forgent outdated` — compare `forgent.lock.json` with the active registry: `outdated` (another version), `changed` (same version, different published files), `up to date`, `not in registry`. Exits 1 when something is behind.
+- `forgent update [<name>...] [--force] [--dry-run]` — bring skills to the registry's version in every place the lockfile records, showing which files are added, changed or removed. An install with local edits is left alone (exit 1) unless `--force`.
 - `forgent add --provider <p>[,<p>…] <name>[@<version>]...` — copy one or more skills into each provider's install dir (`--project` / `--user` pick the scope). Refuses to overwrite unless `--force`. Pinning to `@<version>` requires the registry to declare `items[].version`. Warns when a single-file provider would drop part of a skill.
 - `forgent remove --provider <p>[,<p>…] <name>` — delete an installed skill from each provider's install dir, and drop those installs from the lockfile.
 - `forgent init [--provider <p>[,<p>…]] [--project|--user] [--dest <d>]` — persist defaults in `forgent.config.json` so future commands don't need the flags.
@@ -263,7 +295,9 @@ once no install is left. `--dry-run` skips the write.
 - `--project` / `--user` — install inside the project (`agents` default) or in your home directory (`claude` default). The single-file providers only support `--user`.
 - `--registry <url|path>` — override the registry source. Accepts an HTTPS URL (e.g. your own GitHub raw URL) or a local filesystem path. Default: the bundled community registry hosted on GitHub.
 - `--dest <path>` — override the install directory, one provider at a time (otherwise: `FORGENT_INSTALL_DIR`, `forgent.config.json`, then the provider's folder for the scope). On `verify`, narrows the check to installs in that directory.
-- `--force` — overwrite an existing install on `add`.
+- `--force` — overwrite an existing install on `add`, or local edits on `update`.
+- `--yes`, `-y` — install skills that ship scripts without asking (`add`, `update`).
+- `--all` — on `show`, print every file.
 - `--dry-run` — print what would happen, write nothing.
 - `--strict-sha256` — (default since 1.0) refuse to install any file whose manifest entry omits a sha256. Same as `FORGENT_STRICT_SHA256=1`. Kept as an explicit no-op for scripts that want to pin the behaviour.
 - `--no-strict-sha256` — opt out of strict mode: install with a one-time `WARN` per skill when the manifest omits a sha256. Same as `FORGENT_STRICT_SHA256=0`.

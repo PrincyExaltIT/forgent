@@ -14,6 +14,9 @@ import { runDoctor } from "../src/commands/doctor.js";
 import { runVerify } from "../src/commands/verify.js";
 import { runHashFiles } from "../src/commands/hash-files.js";
 import { runValidateSkill } from "../src/commands/validate-skill.js";
+import { runShow } from "../src/commands/show.js";
+import { runOutdated } from "../src/commands/outdated.js";
+import { runUpdate } from "../src/commands/update.js";
 import { VERSION } from "../src/version.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -27,9 +30,14 @@ Usage:
   forgent providers                          List supported providers
   forgent list                               List skills in the registry
   forgent info <name>                        Show one skill's metadata + files
+  forgent show <name>[@v] [--all]            Read a skill before installing: SKILL.md,
+                                             files (scripts flagged), every file with --all
   forgent add --provider <p> <name>[@v]...   Copy skills into <p>'s install dir
                                              e.g. --provider agents,claude --project
   forgent remove --provider <p> <name>       Delete an installed skill
+  forgent outdated                           Compare forgent.lock.json with the registry
+  forgent update [<name>...]                 Update every recorded install to the registry's
+                                             version; local changes need --force
   forgent init [--provider <p>] [--dest <d>] Persist defaults in forgent.config.json
   forgent registry <verb> [args]             Manage named registries (see below)
   forgent validate-registry                  Validate the registry manifest
@@ -74,8 +82,11 @@ Flags:
                         Default: FORGENT_INSTALL_DIR / forgent.config.json, else
                         the provider's folder for the chosen scope.
                         On verify, narrows the check to installs in that directory.
-  --force               Overwrite an existing skill on add, or an existing
-                        registry entry on \`registry add\`.
+  --force               Overwrite an existing skill on add, local changes on
+                        update, or an existing registry entry on \`registry add\`.
+  --yes, -y             Install skills that ship scripts without asking. Without
+                        a terminal (CI, pipes) forgent only prints the notice.
+  --all                 On show, print every file, not only SKILL.md.
   --default             On \`registry add\`, also mark the new entry default.
   --dry-run             Print what would happen, change nothing.
   --strict-sha256       (Default since 1.0.) Refuse to install any file whose
@@ -112,6 +123,8 @@ function parseArgs(argv) {
     makeDefault: false,
     // "project" | "user" | null (each provider has its own default).
     scope: null,
+    yes: false,
+    all: false,
   };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
@@ -122,6 +135,8 @@ function parseArgs(argv) {
     else if (a === "--project") flags.scope = "project";
     else if (a === "--user") flags.scope = "user";
     else if (a === "--force") flags.force = true;
+    else if (a === "--yes" || a === "-y") flags.yes = true;
+    else if (a === "--all") flags.all = true;
     else if (a === "--default") flags.makeDefault = true;
     else if (a === "--dry-run") flags.dryRun = true;
     else if (a === "--strict-sha256") flags.strictSha256 = true;
@@ -176,6 +191,19 @@ async function main() {
         process.exit(2);
       }
       await runAdd(ctx, positional);
+      return;
+    case "show":
+      if (positional.length === 0) {
+        console.error("error: `forgent show` needs a skill name");
+        process.exit(2);
+      }
+      await runShow(ctx, positional[0]);
+      return;
+    case "outdated":
+      await runOutdated(ctx);
+      return;
+    case "update":
+      await runUpdate(ctx, positional);
       return;
     case "remove":
       if (positional.length === 0) {
