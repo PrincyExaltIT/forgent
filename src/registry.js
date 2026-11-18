@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { findRegistryByName, loadRegistries } from "./config.js";
 import { copyDir, copyFileAs } from "./fs-helpers.js";
+import { gitRegistryLabel, isGitRegistry, syncGitRegistry } from "./git-registry.js";
 import {
   assertSafeName,
   assertSafeRelativePath,
@@ -90,6 +91,11 @@ export async function resolveRegistryBase(ctx) {
     raw = DEFAULT_REGISTRY;
   }
 
+  if (isGitRegistry(raw)) {
+    // git+https://host/group/registry.git[#ref]: fetched with git into forgent's cache
+    const git = await syncGitRegistry(raw);
+    return { base: git.dir, kind: "git", git };
+  }
   if (isHttpUrl(raw)) {
     return { base: trimTrailingSlash(raw), kind: "url" };
   }
@@ -132,7 +138,7 @@ async function readText(filePath) {
 }
 
 export async function loadRegistry(ctx) {
-  const { base, kind } = await resolveRegistryBase(ctx);
+  const { base, kind, git } = await resolveRegistryBase(ctx);
   const manifestLocator =
     kind === "url" ? joinUrl(base, MANIFEST_FILE) : path.join(base, MANIFEST_FILE);
   const raw =
@@ -197,7 +203,9 @@ export async function loadRegistry(ctx) {
     name: parsed.name,
     version: parsed.version,
     items,
-    source: manifestLocator,
+    // git: the URL and the commit (portable, no credentials), not the cache path
+    source: kind === "git" ? git.source : manifestLocator,
+    ...(kind === "git" ? { git } : {}),
   };
 }
 
@@ -271,16 +279,21 @@ export async function materializeSkill(
     return destDir;
   }
 
+  // url and git registries install the files the manifest lists, each checked
+  // against its sha256: over HTTP for url, from the fetched checkout for git.
   const strict = isStrictSha256Mode(strictSha256);
   for (const file of skillFiles(skill)) {
     assertSafeRelativePath(file.path, `skill "${skill.name}" file.path`);
-    const url = joinUrl(registry.base, `${root}/${file.path}`);
+    const from =
+      registry.kind === "git"
+        ? safeJoin(registry.base, `${root}/${file.path}`)
+        : joinUrl(registry.base, `${root}/${file.path}`);
     const target = safeJoin(destDir, file.path);
     if (dryRun) {
-      console.log(`[dry-run] fetch ${url} -> ${target}`);
+      console.log(`[dry-run] ${registry.kind === "git" ? "copy" : "fetch"} ${from} -> ${target}`);
       continue;
     }
-    const body = await fetchText(url);
+    const body = registry.kind === "git" ? await readText(from) : await fetchText(from);
     if (file.sha256) {
       const actual = sha256OfString(body);
       if (actual !== file.sha256) {
@@ -309,7 +322,7 @@ export async function materializeSkill(
 
 export async function listSkillFilePaths(registry, skill) {
   assertSafeName(skill.name, "skill.name");
-  if (registry.kind === "url") {
+  if (registry.kind === "url" || registry.kind === "git") {
     return skillFiles(skill).map((f) => f.path);
   }
   const sourceDir = safeJoin(registry.base, skillSourceRoot(skill.name));
@@ -330,6 +343,7 @@ export async function listSkillFilePaths(registry, skill) {
 export function skillSourceLocator(registry, skill) {
   assertSafeName(skill.name, "skill.name");
   const rel = skillSourceRoot(skill.name);
+  if (registry.kind === "git") return `${gitRegistryLabel(registry.git.url, registry.git.ref)} @ ${registry.git.commit.slice(0, 12)} : ${rel}`;
   return registry.kind === "url"
     ? joinUrl(registry.base, rel)
     : safeJoin(registry.base, rel);

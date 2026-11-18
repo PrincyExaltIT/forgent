@@ -1,6 +1,7 @@
 import { loadConfig, writeConfig } from "../config.js";
 import { assertSafeName } from "../path-safety.js";
 import { DEFAULT_REGISTRY } from "../registry.js";
+import { isGitRegistry, parseGitRegistry } from "../git-registry.js";
 
 const VERBS = ["list", "add", "remove", "set-default"];
 
@@ -55,6 +56,13 @@ async function addRegistry(ctx, positional) {
   assertSafeName(name, "registry name");
   if (typeof url !== "string" || url.length === 0) {
     throw new Error("registry add: <url-or-path> must be a non-empty string");
+  }
+  // forgent.config.json is meant to be committed: no credentials in it, ever.
+  if (isGitRegistry(url)) parseGitRegistry(url);
+  else if (/^https?:\/\/[^/]*@/i.test(url)) {
+    throw new Error(
+      "registry add: the URL must not contain credentials (forgent.config.json is meant to be committed)",
+    );
   }
 
   const { data } = await loadConfig(ctx.cwd);

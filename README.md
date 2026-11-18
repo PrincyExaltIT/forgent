@@ -46,7 +46,9 @@ npm install -g forgent
 forgent add --provider agents angular-review
 ```
 
-Requires Node 18+ (uses the global `fetch`).
+Installed globally, the command is just `forgent`: every example below works with or without `npx`.
+
+Requires Node 18+ (uses the global `fetch`). Git registries (`git+https://…`) also need `git` on `PATH`.
 
 ## Quick tour
 
@@ -367,6 +369,45 @@ locally:
 npx forgent --registry ./path/to/registry list
 ```
 
+### Private registry over git (1.3+)
+
+A registry can also be a git repository, private or not: prefix its clone URL
+with `git+`, and optionally pin a branch, tag or commit after `#`.
+
+```bash
+# once, in the project: writes forgent.config.json, with no credentials in it
+forgent registry add team git+https://gitlab.com/my-group/agent-skill.git --default
+
+# then the usual commands, unchanged
+forgent add --provider agents --project angular-review
+forgent outdated
+forgent update
+
+# pin a tag (or a branch, or a commit)
+forgent add --registry "git+https://gitlab.com/my-group/agent-skill.git#v0.8.1" angular-review
+```
+
+forgent fetches the repository with git (shallow, into its cache: `%LOCALAPPDATA%\forgent\cache`
+on Windows, `$XDG_CACHE_HOME/forgent` or `~/.cache/forgent` elsewhere, or `FORGENT_CACHE_DIR`),
+then installs the files the manifest lists, each checked against its sha256, byte for byte
+(no line-ending conversion). The lockfile records `git+<url>#<commit>`: portable across the
+team, and it says exactly which registry commit each install came from.
+
+Authentication is git's:
+
+- **On a workstation**, let git's credential helper store your username and token once:
+  clone the registry repository one time and answer the prompt; Git Credential Manager
+  keeps them in the system vault.
+- **In CI** (or without a credential helper), set `FORGENT_GIT_USER` and `FORGENT_GIT_TOKEN`.
+  forgent hands them to git through an inline credential helper that reads the environment,
+  so the token never appears in a command line. With a GitLab deploy token, the user is the
+  token's `gitlab+deploy-token-…` name; with a personal or project token, any user works
+  (`oauth2` by default).
+
+Credentials are refused in the URL itself (`https://user:token@…`): the URL ends up in
+`forgent.config.json` and `forgent.lock.json`, which are meant to be committed. Git
+registries need `git` on `PATH`.
+
 ### Multi-registry
 
 You can persist multiple named registries in `forgent.config.json` and mark
@@ -409,7 +450,7 @@ npx forgent registry remove my-internal
 `--registry <value>` and `FORGENT_REGISTRY` both accept a configured **name**
 in addition to a raw URL or path. The full resolution order is:
 
-1. `--registry <value>` — name match in config, else literal URL/path.
+1. `--registry <value>` — name match in config, else literal URL, `git+` URL or path.
 2. `FORGENT_REGISTRY` env — same.
 3. `forgent.config.json` `defaultRegistry` (by name).
 4. Built-in default URL.

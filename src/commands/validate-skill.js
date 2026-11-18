@@ -28,7 +28,7 @@ async function fetchJsonText(url) {
 }
 
 async function readExample(registry, skill, file) {
-  if (registry.kind === "fs") {
+  if (registry.kind === "fs" || registry.kind === "git") {
     const target = safeJoin(registry.base, `skills/${skill.name}/${file.path}`);
     return fs.readFile(target, "utf8");
   }
