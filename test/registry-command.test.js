@@ -40,7 +40,7 @@ test("registry list: empty config prints built-in default notice", async () => {
     assert.equal(r.code, 0, r.stderr);
     assert.match(r.stdout, /no registries configured/);
     assert.match(r.stdout, /built-in default/);
-    assert.match(r.stdout, /raw\.githubusercontent\.com\/PrincyExaltIT\/agent-skill/);
+    assert.match(r.stdout, /git\+https:\/\/gitlab\.com\/skill-issue-formation\/agent-skill\.git/);
   } finally {
     await rmTmp(cwd);
   }

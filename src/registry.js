@@ -19,8 +19,17 @@ import {
 } from "./registry-schema.js";
 import { VERSION } from "./version.js";
 
+// The built-in default: the private registry of the Skill Issue course (eXalt),
+// readable with the deploy token the course hands out. Outside the course, set
+// your own with --registry or `forgent registry add <name> <url> --default`.
 export const DEFAULT_REGISTRY =
-  "https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main";
+  "git+https://gitlab.com/skill-issue-formation/agent-skill.git";
+
+const DEFAULT_REGISTRY_HINT =
+  "forgent's built-in default registry is the private Skill Issue registry (eXalt). " +
+  "Course participants: set FORGENT_GIT_USER and FORGENT_GIT_TOKEN to the registry's deploy token. " +
+  "Anyone else: point forgent at your own registry with --registry <url-or-path> or " +
+  "`forgent registry add <name> <url> --default`.";
 
 const MANIFEST_FILE = "registry.json";
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -93,7 +102,13 @@ export async function resolveRegistryBase(ctx) {
 
   if (isGitRegistry(raw)) {
     // git+https://host/group/registry.git[#ref]: fetched with git into forgent's cache
-    const git = await syncGitRegistry(raw);
+    let git;
+    try {
+      git = await syncGitRegistry(raw);
+    } catch (err) {
+      if (raw === DEFAULT_REGISTRY) throw new Error(`${err.message}\n${DEFAULT_REGISTRY_HINT}`);
+      throw err;
+    }
     return { base: git.dir, kind: "git", git };
   }
   if (isHttpUrl(raw)) {

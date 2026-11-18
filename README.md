@@ -310,14 +310,18 @@ once no install is left. `--dry-run` skips the write.
 
 For provider: `--provider` flag → `FORGENT_PROVIDER` env → `forgent.config.json` → error.
 For install dir: `--dest` flag → `FORGENT_INSTALL_DIR` env → `forgent.config.json` `installDir` → the provider's folder for the scope (`--project` / `--user` → `forgent.config.json` `scope` → the provider's default scope).
-For registry: `--registry` flag (configured name or raw URL/path) → `FORGENT_REGISTRY` env (same) → `forgent.config.json` `defaultRegistry` (by name) → built-in default URL. See [Multi-registry](#multi-registry).
+For registry: `--registry` flag (configured name or raw URL/path) → `FORGENT_REGISTRY` env (same) → `forgent.config.json` `defaultRegistry` (by name) → built-in default (the Skill Issue course registry). See [Multi-registry](#multi-registry).
 
 ## The registry
 
-The default registry is hosted at
-`https://raw.githubusercontent.com/PrincyExaltIT/agent-skill` (branch `main`).
-forgent fetches `<base>/registry.json` for the manifest, then fetches each
-declared skill file at `<base>/skills/<name>/<file>`.
+The built-in default registry is the private registry of the Skill Issue course
+(eXalt): `git+https://gitlab.com/skill-issue-formation/agent-skill.git`, read with
+the deploy token the course hands out (see [Private registry over git](#private-registry-over-git-13)).
+Outside the course, point forgent at your own registry with `--registry` or
+`forgent registry add <name> <url> --default`.
+
+For an HTTP(S) registry, forgent fetches `<base>/registry.json` for the manifest,
+then each declared skill file at `<base>/skills/<name>/<file>`.
 
 ### Manifest shape
 
@@ -414,9 +418,9 @@ You can persist multiple named registries in `forgent.config.json` and mark
 one as the default for this directory:
 
 ```bash
-# add the public registry under a friendly name
+# add a registry under a friendly name
 npx forgent registry add official \
-  https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main/ \
+  https://registry.example.com/forgent/ \
   --default
 
 # add an internal one alongside
@@ -424,7 +428,7 @@ npx forgent registry add my-internal https://internal.corp/forgent-registry/
 
 # inspect (the * marks the default)
 npx forgent registry list
-# * official      https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main/
+# * official      https://registry.example.com/forgent/
 #   my-internal   https://internal.corp/forgent-registry/
 
 # switch the default
@@ -440,7 +444,7 @@ npx forgent registry remove my-internal
 {
   "provider": "claude",
   "registries": [
-    { "name": "official", "url": "https://raw.githubusercontent.com/PrincyExaltIT/agent-skill/main/" },
+    { "name": "official", "url": "https://registry.example.com/forgent/" },
     { "name": "my-internal", "url": "https://internal.corp/forgent-registry/" }
   ],
   "defaultRegistry": "official"
@@ -453,15 +457,16 @@ in addition to a raw URL or path. The full resolution order is:
 1. `--registry <value>` — name match in config, else literal URL, `git+` URL or path.
 2. `FORGENT_REGISTRY` env — same.
 3. `forgent.config.json` `defaultRegistry` (by name).
-4. Built-in default URL.
+4. Built-in default: the Skill Issue course registry.
 
 Use `--force` on `registry add` to overwrite an existing entry. `--default`
 on `registry add` makes the new entry the default in one step.
 
 ### Contribute a skill
 
-Open a PR against
-[PrincyExaltIT/agent-skill](https://github.com/PrincyExaltIT/agent-skill).
+Skills of the Skill Issue course go through a merge request on its private
+registry, `gitlab.com/skill-issue-formation/agent-skill`. For your own skills,
+host your own registry (see [Host your own](#host-your-own)).
 
 ## Tests
 
@@ -496,9 +501,8 @@ Breaking changes to any of the above require a major version bump.
 programmatically, pin to an exact major version — refactors there can land
 in a minor.
 
-The default registry URL
-(`https://raw.githubusercontent.com/PrincyExaltIT/agent-skill`) is stable but
-may move to a CDN domain post-1.0 without a major bump. Rewriting a `$schema`
+The default registry location may move without a major bump (it did in 1.4,
+from a public GitHub repository to a private GitLab one). Rewriting a `$schema`
 URL or the default registry endpoint is non-breaking; the data shape at the
 endpoint is what's covered by semver.
 

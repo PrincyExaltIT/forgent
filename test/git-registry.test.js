@@ -6,6 +6,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { BIN, mkTmp, pathExists, readText, rmTmp, seedRegistry, sha256Hex, writeText } from "./_helpers.js";
 import { parseGitRegistry } from "../src/git-registry.js";
+import { DEFAULT_REGISTRY } from "../src/registry.js";
 
 let hasGit = true;
 try {
@@ -184,4 +185,11 @@ test("git registry: URL parsing", () => {
   assert.throws(() => parseGitRegistry("git+https://gitlab.com/g/r.git#a..b"), /invalid git ref/);
   assert.throws(() => parseGitRegistry("git+ftp://example.com/r.git"), /must use https/);
   assert.throws(() => parseGitRegistry("git+not a url"), /invalid git registry URL/);
+});
+
+test("default registry: the private Skill Issue registry, over git, without credentials", () => {
+  assert.ok(DEFAULT_REGISTRY.startsWith("git+https://"), DEFAULT_REGISTRY);
+  const { url, ref } = parseGitRegistry(DEFAULT_REGISTRY);
+  assert.equal(url, "https://gitlab.com/skill-issue-formation/agent-skill.git");
+  assert.equal(ref, null);
 });
