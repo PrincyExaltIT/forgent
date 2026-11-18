@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-19
+
+### Changed
+- **Default registry**: the built-in default is now the private registry of the Skill
+  Issue course, `git+https://gitlab.com/skill-issue-formation/agent-skill.git`, instead
+  of `raw.githubusercontent.com/PrincyExaltIT/agent-skill`, which is no longer public.
+  Course participants read it with the deploy token the course hands out
+  (`FORGENT_GIT_USER` / `FORGENT_GIT_TOKEN`, or git's credential helper); anyone else
+  sets their own registry with `--registry` or `forgent registry add`. When the default
+  cannot be fetched, the error says so. A configured registry, `--registry` and
+  `FORGENT_REGISTRY` are unaffected.
+
 ## [1.3.0] - 2026-11-19
 
 Private registries, with the same commands. Additive: http(s) and path registries,
