@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-19
+
+Private registries, with the same commands. Additive: http(s) and path registries,
+the manifest schema, the lockfile shape and exit codes are unchanged.
+
+### Added
+- **Git registries**: `--registry`, `FORGENT_REGISTRY` and `forgent registry add`
+  accept `git+https://…` (also `git+ssh://`, `git+file://`), with an optional
+  `#branch`, `#tag` or `#commit`. forgent fetches the repository with git (shallow,
+  into `FORGENT_CACHE_DIR` or the user cache), then installs the files the manifest
+  lists, each checked against its sha256, byte for byte (no CRLF conversion).
+  `list`, `info`, `show`, `add`, `outdated`, `update`, `doctor` and `validate` work
+  the same way.
+- The lockfile records `git+<url>#<commit>` for git installs: portable, and exact.
+- Authentication through git: the user's credential helper, or `FORGENT_GIT_USER` /
+  `FORGENT_GIT_TOKEN` for CI, passed through an inline helper so the token never
+  shows in a command line. Without a terminal, git's prompt is disabled
+  (`GIT_TERMINAL_PROMPT=0`) instead of hanging.
+
+### Security
+- URLs carrying credentials (`https://user:token@…`) are refused by `--registry`
+  and `forgent registry add`: forgent.config.json and the lockfile are meant to be
+  committed.
+
 ## [1.2.1] - 2026-10-09
 
 ### Fixed
